@@ -1,0 +1,14 @@
+{
+  "author": "whyrusleeping",
+  "bugs": {
+    "url": "https://github.com/multiformats/go-cid"
+  },
+  "gx": {
+    "dvcsimport": "github.com/multiformats/go-cid"
+  },
+  "gxVersion": "0.8.0",
+  "language": "go",
+  "license": "",
+  "name": "go-cid",
+  "version": "0.0.0"
+}
