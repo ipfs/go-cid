@@ -4,19 +4,19 @@ import (
 	"bytes"
 	"testing"
 
-	mh "github.com/jbenet/go-multihash"
+	mh "gx/ipfs/QmYf7ng2hG5XBtJA3tN34DQ2GUN5HNksEw1rLDkmr6vGku/go-multihash"
 )
 
 func assertEqual(t *testing.T, a, b *Cid) {
-	if a.Type != b.Type {
+	if a.codec != b.codec {
 		t.Fatal("mismatch on type")
 	}
 
-	if a.Version != b.Version {
+	if a.version != b.version {
 		t.Fatal("mismatch on version")
 	}
 
-	if !bytes.Equal(a.Hash, b.Hash) {
+	if !bytes.Equal(a.hash, b.hash) {
 		t.Fatal("multihash mismatch")
 	}
 }
@@ -28,15 +28,12 @@ func TestBasicMarshaling(t *testing.T) {
 	}
 
 	cid := &Cid{
-		Type:    7,
-		Version: 1,
-		Hash:    h,
+		codec:   7,
+		version: 1,
+		hash:    h,
 	}
 
-	data, err := cid.Bytes()
-	if err != nil {
-		t.Fatal(err)
-	}
+	data := cid.Bytes()
 
 	out, err := Cast(data)
 	if err != nil {
@@ -62,11 +59,11 @@ func TestV0Handling(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if cid.Version != 0 {
+	if cid.version != 0 {
 		t.Fatal("should have gotten version 0 cid")
 	}
 
-	if cid.Hash.B58String() != old {
+	if cid.hash.B58String() != old {
 		t.Fatal("marshaling roundtrip failed")
 	}
 
@@ -80,20 +77,5 @@ func TestV0ErrorCases(t *testing.T) {
 	_, err := Decode(badb58)
 	if err == nil {
 		t.Fatal("should have failed to decode that ref")
-	}
-}
-
-func TestBadVersion(t *testing.T) {
-	c := &Cid{
-		Version: 17,
-	}
-
-	if c.String() != UnsupportedVersionString {
-		t.Fatal("expected unsup string")
-	}
-
-	_, err := c.Bytes()
-	if err == nil {
-		t.Fatal("shouldnt have succeeded in calling bytes")
 	}
 }

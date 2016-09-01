@@ -6,6 +6,14 @@
   "gx": {
     "dvcsimport": "github.com/multiformats/go-cid"
   },
+  "gxDependencies": [
+    {
+      "author": "whyrusleeping",
+      "hash": "QmYf7ng2hG5XBtJA3tN34DQ2GUN5HNksEw1rLDkmr6vGku",
+      "name": "go-multihash",
+      "version": "0.0.0"
+    }
+  ],
   "gxVersion": "0.8.0",
   "language": "go",
   "license": "",
