@@ -33,3 +33,12 @@ func (s *Set) Keys() []*Cid {
 	}
 	return out
 }
+
+func (s *Set) Visit(c *Cid) bool {
+	if !s.Has(c) {
+		s.Add(c)
+		return true
+	}
+
+	return false
+}

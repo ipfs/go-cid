@@ -145,3 +145,22 @@ func (c *Cid) Equals(o *Cid) bool {
 		c.version == o.version &&
 		bytes.Equal(c.hash, o.hash)
 }
+
+func (c *Cid) UnmarshalJSON(b []byte) error {
+	if len(b) < 2 {
+		return fmt.Errorf("invalid cid json blob")
+	}
+	out, err := Decode(string(b[1 : len(b)-1]))
+	if err != nil {
+		return err
+	}
+
+	c.version = out.version
+	c.hash = out.hash
+	c.codec = out.codec
+	return nil
+}
+
+func (c *Cid) MarshalJSON() ([]byte, error) {
+	return []byte(fmt.Sprintf("\"%s\"", c.String())), nil
+}
