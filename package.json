@@ -12,6 +12,12 @@
       "hash": "QmYf7ng2hG5XBtJA3tN34DQ2GUN5HNksEw1rLDkmr6vGku",
       "name": "go-multihash",
       "version": "0.0.0"
+    },
+    {
+      "author": "whyrusleeping",
+      "hash": "QmYiTi9mKBMjfiup7na7PhJK7QEZPdMTJenLdgFYVQ2NUv",
+      "name": "go-multibase",
+      "version": "0.2.0"
     }
   ],
   "gxVersion": "0.8.0",

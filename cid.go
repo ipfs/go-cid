@@ -5,8 +5,8 @@ import (
 	"encoding/binary"
 	"fmt"
 
+	mh "github.com/jbenet/go-multihash"
 	mbase "github.com/multiformats/go-multibase"
-	mh "gx/ipfs/QmYf7ng2hG5XBtJA3tN34DQ2GUN5HNksEw1rLDkmr6vGku/go-multihash"
 )
 
 const UnsupportedVersionString = "<unsupported cid version>"
