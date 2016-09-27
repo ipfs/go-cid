@@ -168,3 +168,9 @@ func (c *Cid) MarshalJSON() ([]byte, error) {
 func (c *Cid) KeyString() string {
 	return string(c.Bytes())
 }
+
+func (c *Cid) Loggable() map[string]interface{} {
+	return map[string]interface{}{
+		"cid": c,
+	}
+}
