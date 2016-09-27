@@ -164,3 +164,7 @@ func (c *Cid) UnmarshalJSON(b []byte) error {
 func (c *Cid) MarshalJSON() ([]byte, error) {
 	return []byte(fmt.Sprintf("\"%s\"", c.String())), nil
 }
+
+func (c *Cid) KeyString() string {
+	return string(c.Bytes())
+}
