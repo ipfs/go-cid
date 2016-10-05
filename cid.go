@@ -12,10 +12,10 @@ import (
 const UnsupportedVersionString = "<unsupported cid version>"
 
 const (
-	Protobuf = iota
-	Raw
-	JSON
-	CBOR
+	Protobuf = 0x70
+	CBOR     = 0x71
+	Raw      = 0x72
+	JSON     = 0x73
 )
 
 func NewCidV0(h mh.Multihash) *Cid {

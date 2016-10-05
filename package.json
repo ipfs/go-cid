@@ -9,9 +9,9 @@
   "gxDependencies": [
     {
       "author": "whyrusleeping",
-      "hash": "QmYf7ng2hG5XBtJA3tN34DQ2GUN5HNksEw1rLDkmr6vGku",
+      "hash": "QmYDds3421prZgqKbLpEK7T9Aa2eVdQ7o3YarX1LVLdP2J",
       "name": "go-multihash",
-      "version": "0.0.0"
+      "version": "1.0.0"
     },
     {
       "author": "whyrusleeping",
@@ -25,6 +25,6 @@
   "license": "",
   "name": "go-cid",
   "releaseCmd": "git commit -a -m \"gx publish $VERSION\"",
-  "version": "0.5.0"
+  "version": "0.5.1"
 }
 
