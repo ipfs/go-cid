@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"testing"
 
-	mh "github.com/jbenet/go-multihash"
+	mh "github.com/multiformats/go-multihash"
 )
 
 func assertEqual(t *testing.T, a, b *Cid) {
