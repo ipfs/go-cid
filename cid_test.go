@@ -2,6 +2,7 @@ package cid
 
 import (
 	"bytes"
+	"math/rand"
 	"testing"
 
 	mh "github.com/multiformats/go-multihash"
@@ -106,5 +107,14 @@ func TestPrefixRoundtrip(t *testing.T) {
 	if pref.Version != pref2.Version || pref.Codec != pref2.Codec ||
 		pref.MhType != pref2.MhType || pref.MhLength != pref2.MhLength {
 		t.Fatal("input prefix didnt match output")
+	}
+}
+
+func TestFuzzCid(t *testing.T) {
+	buf := make([]byte, 128)
+	for i := 0; i < 200; i++ {
+		s := rand.Intn(128)
+		rand.Read(buf[:s])
+		_, _ = Cast(buf[:s])
 	}
 }
