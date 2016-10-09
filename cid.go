@@ -174,3 +174,76 @@ func (c *Cid) Loggable() map[string]interface{} {
 		"cid": c,
 	}
 }
+
+func (c *Cid) Prefix() Prefix {
+	dec, _ := mh.Decode(c.hash) // assuming we got a valid multiaddr, this will not error
+	return Prefix{
+		MhType:   dec.Code,
+		MhLength: dec.Length,
+		Version:  c.version,
+		Codec:    c.codec,
+	}
+}
+
+// Prefix represents all the metadata of a cid, minus any actual content information
+type Prefix struct {
+	Version  uint64
+	Codec    uint64
+	MhType   int
+	MhLength int
+}
+
+func (p Prefix) Sum(data []byte) (*Cid, error) {
+	hash, err := mh.Sum(data, p.MhType, p.MhLength)
+	if err != nil {
+		return nil, err
+	}
+
+	switch p.Version {
+	case 0:
+		return NewCidV0(hash), nil
+	case 1:
+		return NewCidV1(p.Codec, hash), nil
+	default:
+		return nil, fmt.Errorf("invalid cid version")
+	}
+}
+
+func (p Prefix) Bytes() []byte {
+	buf := make([]byte, 16)
+	n := binary.PutUvarint(buf, p.Version)
+	n += binary.PutUvarint(buf[n:], p.Codec)
+	n += binary.PutUvarint(buf[n:], uint64(p.MhType))
+	n += binary.PutUvarint(buf[n:], uint64(p.MhLength))
+	return buf[:n]
+}
+
+func PrefixFromBytes(buf []byte) (Prefix, error) {
+	r := bytes.NewReader(buf)
+	vers, err := binary.ReadUvarint(r)
+	if err != nil {
+		return Prefix{}, err
+	}
+
+	codec, err := binary.ReadUvarint(r)
+	if err != nil {
+		return Prefix{}, err
+	}
+
+	mhtype, err := binary.ReadUvarint(r)
+	if err != nil {
+		return Prefix{}, err
+	}
+
+	mhlen, err := binary.ReadUvarint(r)
+	if err != nil {
+		return Prefix{}, err
+	}
+
+	return Prefix{
+		Version:  vers,
+		Codec:    codec,
+		MhType:   int(mhtype),
+		MhLength: int(mhlen),
+	}, nil
+}

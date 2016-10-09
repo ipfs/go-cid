@@ -79,3 +79,32 @@ func TestV0ErrorCases(t *testing.T) {
 		t.Fatal("should have failed to decode that ref")
 	}
 }
+
+func TestPrefixRoundtrip(t *testing.T) {
+	data := []byte("this is some test content")
+	hash, _ := mh.Sum(data, mh.SHA2_256, -1)
+	c := NewCidV1(CBOR, hash)
+
+	pref := c.Prefix()
+
+	c2, err := pref.Sum(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !c.Equals(c2) {
+		t.Fatal("output didnt match original")
+	}
+
+	pb := pref.Bytes()
+
+	pref2, err := PrefixFromBytes(pb)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if pref.Version != pref2.Version || pref.Codec != pref2.Codec ||
+		pref.MhType != pref2.MhType || pref.MhLength != pref2.MhLength {
+		t.Fatal("input prefix didnt match output")
+	}
+}
