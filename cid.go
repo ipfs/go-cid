@@ -16,6 +16,10 @@ const (
 	CBOR     = 0x71
 	Raw      = 0x72
 	JSON     = 0x73
+
+	EthereumBlock = 0x90
+	EthereumTx    = 0x91
+	Bitcoin       = 0xb0
 )
 
 func NewCidV0(h mh.Multihash) *Cid {
