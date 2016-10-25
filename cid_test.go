@@ -52,6 +52,13 @@ func TestBasicMarshaling(t *testing.T) {
 	assertEqual(t, cid, out2)
 }
 
+func TestEmptyString(t *testing.T) {
+	_, err := Decode("")
+	if err == nil {
+		t.Fatal("shouldnt be able to parse an empty cid")
+	}
+}
+
 func TestV0Handling(t *testing.T) {
 	old := "QmdfTbBqBPQ7VNxZEYEj14VmRuZBkqFbiwReogJgS1zR1n"
 

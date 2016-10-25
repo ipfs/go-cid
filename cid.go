@@ -46,6 +46,10 @@ type Cid struct {
 }
 
 func Decode(v string) (*Cid, error) {
+	if len(v) < 2 {
+		return nil, fmt.Errorf("cid too short")
+	}
+
 	if len(v) == 46 && v[:2] == "Qm" {
 		hash, err := mh.FromB58String(v)
 		if err != nil {

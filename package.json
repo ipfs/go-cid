@@ -15,9 +15,9 @@
     },
     {
       "author": "whyrusleeping",
-      "hash": "QmYiTi9mKBMjfiup7na7PhJK7QEZPdMTJenLdgFYVQ2NUv",
+      "hash": "QmUq3H9YpcPphbRj6ct6rBgBE377A8wANP8zPMRqe1WYbf",
       "name": "go-multibase",
-      "version": "0.2.0"
+      "version": "0.2.1"
     }
   ],
   "gxVersion": "0.8.0",
