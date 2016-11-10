@@ -21,6 +21,8 @@ const (
 	EthereumTx    = 0x91
 	BitcoinBlock  = 0xb0
 	BitcoinTx     = 0xb1
+	ZcashBlock    = 0xc0
+	ZcashTx       = 0xc1
 )
 
 func NewCidV0(h mh.Multihash) *Cid {
