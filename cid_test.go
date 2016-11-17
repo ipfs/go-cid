@@ -124,7 +124,7 @@ func Test16BytesVarint(t *testing.T) {
 	hash, _ := mh.Sum(data, mh.SHA2_256, -1)
 	c := NewCidV1(CBOR, hash)
 
-	c.codec = 1 << 54
+	c.codec = 1 << 63
 	_ = c.Bytes()
 }
 

@@ -266,7 +266,7 @@ func (p Prefix) Sum(data []byte) (*Cid, error) {
 }
 
 func (p Prefix) Bytes() []byte {
-	buf := make([]byte, 16)
+	buf := make([]byte, 4*binary.MaxVarintLen64)
 	n := binary.PutUvarint(buf, p.Version)
 	n += binary.PutUvarint(buf[n:], p.Codec)
 	n += binary.PutUvarint(buf[n:], uint64(p.MhType))
