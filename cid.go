@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"strings"
 
 	mbase "github.com/multiformats/go-multibase"
 	mh "github.com/multiformats/go-multihash"
@@ -45,6 +46,24 @@ type Cid struct {
 	version uint64
 	codec   uint64
 	hash    mh.Multihash
+}
+
+func Parse(v interface{}) (*Cid, error) {
+	switch v2 := v.(type) {
+	case string:
+		if strings.Contains(v2, "/ipfs/") {
+			return Decode(strings.Split(v2, "/ipfs/")[1])
+		}
+		return Decode(v2)
+	case []byte:
+		return Cast(v2)
+	case mh.Multihash:
+		return NewCidV0(v2), nil
+	case *Cid:
+		return v2, nil
+	default:
+		return nil, fmt.Errorf("can't parse %+v as Cid", v2)
+	}
 }
 
 func Decode(v string) (*Cid, error) {
