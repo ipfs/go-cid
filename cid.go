@@ -191,7 +191,10 @@ func (c *Cid) bytesV1() []byte {
 	buf := make([]byte, 2*binary.MaxVarintLen64+len(c.hash))
 	n := binary.PutUvarint(buf, c.version)
 	n += binary.PutUvarint(buf[n:], c.codec)
-	copy(buf[n:], c.hash)
+	cn := copy(buf[n:], c.hash)
+	if cn != len(c.hash) {
+		panic("copy hash length is inconsistent")
+	}
 
 	return buf[:n+len(c.hash)]
 }
