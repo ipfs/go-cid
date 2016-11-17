@@ -187,7 +187,8 @@ func (c *Cid) bytesV0() []byte {
 }
 
 func (c *Cid) bytesV1() []byte {
-	buf := make([]byte, 8+len(c.hash))
+	// two 8 bytes (max) numbers plus hash
+	buf := make([]byte, 2*8+len(c.hash))
 	n := binary.PutUvarint(buf, c.version)
 	n += binary.PutUvarint(buf[n:], c.codec)
 	copy(buf[n:], c.hash)
