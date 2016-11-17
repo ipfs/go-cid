@@ -11,7 +11,8 @@ func Fuzz(data []byte) int {
 
 	_ = cid.Bytes()
 	_ = cid.String()
-	_ = cid.Prefix()
+	p := cid.Prefix()
+	_ = p.Bytes()
 
 	if !cid.Equals(cid) {
 		panic("inequality")
@@ -31,5 +32,6 @@ func Fuzz(data []byte) int {
 	if !cid.Equals(cid2) {
 		panic("json loop not equal")
 	}
+
 	return 1
 }
