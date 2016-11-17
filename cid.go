@@ -88,6 +88,7 @@ func Cast(data []byte) (*Cid, error) {
 		return nil, fmt.Errorf("invalid cid version number: %d", vers)
 	}
 
+	// TODO panic: runtime error: slice bounds out of range
 	codec, cn := binary.Uvarint(data[n:])
 
 	rest := data[n+cn:]
