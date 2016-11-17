@@ -2,7 +2,9 @@ package cid
 
 import (
 	"bytes"
+	"fmt"
 	"math/rand"
+	"strings"
 	"testing"
 
 	mh "github.com/multiformats/go-multihash"
@@ -123,5 +125,57 @@ func TestFuzzCid(t *testing.T) {
 		s := rand.Intn(128)
 		rand.Read(buf[:s])
 		_, _ = Cast(buf[:s])
+	}
+}
+
+func TestParse(t *testing.T) {
+	cid, err := Parse(123)
+	if err == nil {
+		t.Fatalf("expected error from Parse()")
+	}
+	if !strings.Contains(err.Error(), "can't parse 123 as Cid") {
+		t.Fatalf("expected int error, got %s", err.Error())
+	}
+
+	theHash := "QmdfTbBqBPQ7VNxZEYEj14VmRuZBkqFbiwReogJgS1zR1n"
+	h, err := mh.FromB58String(theHash)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assertions := [][]interface{}{
+		[]interface{}{NewCidV0(h), theHash},
+		[]interface{}{NewCidV0(h).Bytes(), theHash},
+		[]interface{}{h, theHash},
+		[]interface{}{theHash, theHash},
+		[]interface{}{"/ipfs/" + theHash, theHash},
+		[]interface{}{"https://ipfs.io/ipfs/" + theHash, theHash},
+		[]interface{}{"http://localhost:8080/ipfs/" + theHash, theHash},
+	}
+
+	assert := func(arg interface{}, expected string) error {
+		cid, err = Parse(arg)
+		if err != nil {
+			return err
+		}
+		if cid.version != 0 {
+			return fmt.Errorf("expected version 0, got %s", string(cid.version))
+		}
+		actual := cid.Hash().B58String()
+		if actual != expected {
+			return fmt.Errorf("expected hash %s, got %s", expected, actual)
+		}
+		actual = cid.String()
+		if actual != expected {
+			return fmt.Errorf("expected string %s, got %s", expected, actual)
+		}
+		return nil
+	}
+
+	for _, args := range assertions {
+		err := assert(args[0], args[1].(string))
+		if err != nil {
+			t.Fatal(err)
+		}
 	}
 }
