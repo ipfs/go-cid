@@ -3,6 +3,7 @@ package cid
 import (
 	"bytes"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -88,6 +89,23 @@ func Decode(v string) (*Cid, error) {
 	return Cast(data)
 }
 
+var (
+	ErrVarintBuffSmall = errors.New("reading varint: buffer to small")
+	ErrVarintTooBig    = errors.New("reading varint: varint bigger than 64bits" +
+		" and not supported")
+)
+
+func uvError(read int) error {
+	switch {
+	case read == 0:
+		return ErrVarintBuffSmall
+	case read < 0:
+		return ErrVarintTooBig
+	default:
+		return nil
+	}
+}
+
 func Cast(data []byte) (*Cid, error) {
 	if len(data) == 34 && data[0] == 18 && data[1] == 32 {
 		h, err := mh.Cast(data)
@@ -103,11 +121,18 @@ func Cast(data []byte) (*Cid, error) {
 	}
 
 	vers, n := binary.Uvarint(data)
+	if err := uvError(n); err != nil {
+		return nil, err
+	}
+
 	if vers != 0 && vers != 1 {
 		return nil, fmt.Errorf("invalid cid version number: %d", vers)
 	}
 
 	codec, cn := binary.Uvarint(data[n:])
+	if err := uvError(cn); err != nil {
+		return nil, err
+	}
 
 	rest := data[n+cn:]
 	h, err := mh.Cast(rest)
@@ -162,10 +187,14 @@ func (c *Cid) bytesV0() []byte {
 }
 
 func (c *Cid) bytesV1() []byte {
-	buf := make([]byte, 8+len(c.hash))
+	// two 8 bytes (max) numbers plus hash
+	buf := make([]byte, 2*binary.MaxVarintLen64+len(c.hash))
 	n := binary.PutUvarint(buf, c.version)
 	n += binary.PutUvarint(buf[n:], c.codec)
-	copy(buf[n:], c.hash)
+	cn := copy(buf[n:], c.hash)
+	if cn != len(c.hash) {
+		panic("copy hash length is inconsistent")
+	}
 
 	return buf[:n+len(c.hash)]
 }
@@ -240,7 +269,7 @@ func (p Prefix) Sum(data []byte) (*Cid, error) {
 }
 
 func (p Prefix) Bytes() []byte {
-	buf := make([]byte, 16)
+	buf := make([]byte, 4*binary.MaxVarintLen64)
 	n := binary.PutUvarint(buf, p.Version)
 	n += binary.PutUvarint(buf[n:], p.Codec)
 	n += binary.PutUvarint(buf[n:], uint64(p.MhType))
