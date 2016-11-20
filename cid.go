@@ -14,10 +14,10 @@ import (
 const UnsupportedVersionString = "<unsupported cid version>"
 
 const (
-	Protobuf = 0x70
-	CBOR     = 0x71
-	Raw      = 0x72
-	JSON     = 0x73
+	Raw = 0x55
+
+	DagProtobuf = 0x70
+	DagCBOR     = 0x71
 
 	EthereumBlock = 0x90
 	EthereumTx    = 0x91
