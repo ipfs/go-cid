@@ -9,6 +9,9 @@ go-cid
 
 > A package to handle content IDs in go.
 
+This is an implementation in go of the [CID spec](https://github.com/ipld/cid).
+It is used in go-ipfs and related packages to refer to a typed hunk of data.
+
 
 ## Table of Contents
 
@@ -26,15 +29,24 @@ make deps
 
 ## Examples
 
+To use CIDs, import it in your code like:
 ```go
 import "github.com/ipfs/go-cid"
+```
 
+Then, depending on how you want to use it, something like one of the following examples should work:
+
+### Parsing string input from users
+```go
 // Create a cid from a marshaled string
 c, err := cid.Decode("zdvgqEMYmNeH5fKciougvQcfzMcNjF3Z1tPouJ8C7pc3pe63k")
 if err != nil {...}
 
-fmt.Println(c)
+fmt.Println("Got CID: ", c)
+```
 
+### Creating a CID from scratch
+```go
 // Create a cid manually by specifying the 'prefix' parameters
 pref := cid.Prefix{
 	Version: 1,
@@ -47,14 +59,21 @@ pref := cid.Prefix{
 c, err := pref.Sum([]byte("Hello World!"))
 if err != nil {...}
 
-fmt.Println(c)
+fmt.Println("Created CID: ", c)
+```
 
+### Check if two CIDs match
+```go
 // To test if two cid's are equivalent, be sure to use the 'Equals' method:
 if c1.Equals(c2) {
 	fmt.Println("These two refer to the same exact data!")
 }
+```
 
-// To check if some data matches a given cid, check the prefix sum:
+### Check if some data matches a given CID
+```go
+// To check if some data matches a given cid, 
+// Get your CIDs prefix, and use that to sum the data in question:
 other, err := c.Prefix().Sum(mydata)
 if err != nil {...}
 
