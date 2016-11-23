@@ -93,7 +93,7 @@ func TestV0ErrorCases(t *testing.T) {
 func TestPrefixRoundtrip(t *testing.T) {
 	data := []byte("this is some test content")
 	hash, _ := mh.Sum(data, mh.SHA2_256, -1)
-	c := NewCidV1(CBOR, hash)
+	c := NewCidV1(DagCBOR, hash)
 
 	pref := c.Prefix()
 
@@ -122,7 +122,7 @@ func TestPrefixRoundtrip(t *testing.T) {
 func Test16BytesVarint(t *testing.T) {
 	data := []byte("this is some test content")
 	hash, _ := mh.Sum(data, mh.SHA2_256, -1)
-	c := NewCidV1(CBOR, hash)
+	c := NewCidV1(DagCBOR, hash)
 
 	c.codec = 1 << 63
 	_ = c.Bytes()
