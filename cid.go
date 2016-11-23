@@ -30,7 +30,7 @@ const (
 func NewCidV0(h mh.Multihash) *Cid {
 	return &Cid{
 		version: 0,
-		codec:   Protobuf,
+		codec:   DagProtobuf,
 		hash:    h,
 	}
 }
@@ -114,7 +114,7 @@ func Cast(data []byte) (*Cid, error) {
 		}
 
 		return &Cid{
-			codec:   Protobuf,
+			codec:   DagProtobuf,
 			version: 0,
 			hash:    h,
 		}, nil
