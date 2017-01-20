@@ -11,15 +11,15 @@ import (
 )
 
 func assertEqual(t *testing.T, a, b *Cid) {
-	if a.codec != b.codec {
+	if a.Codec != b.Codec {
 		t.Fatal("mismatch on type")
 	}
 
-	if a.version != b.version {
+	if a.Version != b.Version {
 		t.Fatal("mismatch on version")
 	}
 
-	if !bytes.Equal(a.hash, b.hash) {
+	if !bytes.Equal(a.MHash, b.MHash) {
 		t.Fatal("multihash mismatch")
 	}
 }
@@ -31,9 +31,9 @@ func TestBasicMarshaling(t *testing.T) {
 	}
 
 	cid := &Cid{
-		codec:   7,
-		version: 1,
-		hash:    h,
+		Codec:   7,
+		Version: 1,
+		MHash:   h,
 	}
 
 	data := cid.Bytes()
@@ -69,11 +69,11 @@ func TestV0Handling(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if cid.version != 0 {
+	if cid.Version != 0 {
 		t.Fatal("should have gotten version 0 cid")
 	}
 
-	if cid.hash.B58String() != old {
+	if cid.MHash.B58String() != old {
 		t.Fatal("marshaling roundtrip failed")
 	}
 
@@ -124,7 +124,7 @@ func Test16BytesVarint(t *testing.T) {
 	hash, _ := mh.Sum(data, mh.SHA2_256, -1)
 	c := NewCidV1(DagCBOR, hash)
 
-	c.codec = 1 << 63
+	c.Codec = 1 << 63
 	_ = c.Bytes()
 }
 
@@ -167,8 +167,8 @@ func TestParse(t *testing.T) {
 		if err != nil {
 			return err
 		}
-		if cid.version != 0 {
-			return fmt.Errorf("expected version 0, got %s", string(cid.version))
+		if cid.Version != 0 {
+			return fmt.Errorf("expected version 0, got %s", string(cid.Version))
 		}
 		actual := cid.Hash().B58String()
 		if actual != expected {
