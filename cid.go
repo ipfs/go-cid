@@ -253,7 +253,7 @@ type Prefix struct {
 }
 
 func (p Prefix) Sum(data []byte) (*Cid, error) {
-	hash, err := mh.Sum(data, uint64(p.MhType), p.MhLength)
+	hash, err := mh.Sum(data, p.MhType, p.MhLength)
 	if err != nil {
 		return nil, err
 	}
