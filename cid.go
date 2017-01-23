@@ -29,24 +29,24 @@ const (
 
 func NewCidV0(h mh.Multihash) *Cid {
 	return &Cid{
-		version: 0,
-		codec:   DagProtobuf,
-		hash:    h,
+		Version: 0,
+		Codec:   DagProtobuf,
+		MHash:   h,
 	}
 }
 
 func NewCidV1(c uint64, h mh.Multihash) *Cid {
 	return &Cid{
-		version: 1,
-		codec:   c,
-		hash:    h,
+		Version: 1,
+		Codec:   c,
+		MHash:   h,
 	}
 }
 
 type Cid struct {
-	version uint64
-	codec   uint64
-	hash    mh.Multihash
+	Version uint64
+	Codec   uint64
+	MHash   mh.Multihash
 }
 
 func Parse(v interface{}) (*Cid, error) {
@@ -114,9 +114,9 @@ func Cast(data []byte) (*Cid, error) {
 		}
 
 		return &Cid{
-			codec:   DagProtobuf,
-			version: 0,
-			hash:    h,
+			Codec:   DagProtobuf,
+			Version: 0,
+			MHash:   h,
 		}, nil
 	}
 
@@ -141,20 +141,20 @@ func Cast(data []byte) (*Cid, error) {
 	}
 
 	return &Cid{
-		version: vers,
-		codec:   codec,
-		hash:    h,
+		Version: vers,
+		Codec:   codec,
+		MHash:   h,
 	}, nil
 }
 
 func (c *Cid) Type() uint64 {
-	return c.codec
+	return c.Codec
 }
 
 func (c *Cid) String() string {
-	switch c.version {
+	switch c.Version {
 	case 0:
-		return c.hash.B58String()
+		return c.MHash.B58String()
 	case 1:
 		mbstr, err := mbase.Encode(mbase.Base58BTC, c.bytesV1())
 		if err != nil {
@@ -168,11 +168,11 @@ func (c *Cid) String() string {
 }
 
 func (c *Cid) Hash() mh.Multihash {
-	return c.hash
+	return c.MHash
 }
 
 func (c *Cid) Bytes() []byte {
-	switch c.version {
+	switch c.Version {
 	case 0:
 		return c.bytesV0()
 	case 1:
@@ -183,26 +183,26 @@ func (c *Cid) Bytes() []byte {
 }
 
 func (c *Cid) bytesV0() []byte {
-	return []byte(c.hash)
+	return []byte(c.MHash)
 }
 
 func (c *Cid) bytesV1() []byte {
 	// two 8 bytes (max) numbers plus hash
-	buf := make([]byte, 2*binary.MaxVarintLen64+len(c.hash))
-	n := binary.PutUvarint(buf, c.version)
-	n += binary.PutUvarint(buf[n:], c.codec)
-	cn := copy(buf[n:], c.hash)
-	if cn != len(c.hash) {
+	buf := make([]byte, 2*binary.MaxVarintLen64+len(c.MHash))
+	n := binary.PutUvarint(buf, c.Version)
+	n += binary.PutUvarint(buf[n:], c.Codec)
+	cn := copy(buf[n:], c.MHash)
+	if cn != len(c.MHash) {
 		panic("copy hash length is inconsistent")
 	}
 
-	return buf[:n+len(c.hash)]
+	return buf[:n+len(c.MHash)]
 }
 
 func (c *Cid) Equals(o *Cid) bool {
-	return c.codec == o.codec &&
-		c.version == o.version &&
-		bytes.Equal(c.hash, o.hash)
+	return c.Codec == o.Codec &&
+		c.Version == o.Version &&
+		bytes.Equal(c.MHash, o.MHash)
 }
 
 func (c *Cid) UnmarshalJSON(b []byte) error {
@@ -214,9 +214,9 @@ func (c *Cid) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
-	c.version = out.version
-	c.hash = out.hash
-	c.codec = out.codec
+	c.Version = out.Version
+	c.MHash = out.MHash
+	c.Codec = out.Codec
 	return nil
 }
 
@@ -235,12 +235,12 @@ func (c *Cid) Loggable() map[string]interface{} {
 }
 
 func (c *Cid) Prefix() Prefix {
-	dec, _ := mh.Decode(c.hash) // assuming we got a valid multiaddr, this will not error
+	dec, _ := mh.Decode(c.MHash) // assuming we got a valid multiaddr, this will not error
 	return Prefix{
-		MhType:   dec.Code,
+		MhType:   int(dec.Code),
 		MhLength: dec.Length,
-		Version:  c.version,
-		Codec:    c.codec,
+		Version:  c.Version,
+		Codec:    c.Codec,
 	}
 }
 
