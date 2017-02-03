@@ -188,3 +188,15 @@ func TestParse(t *testing.T) {
 		}
 	}
 }
+
+func TestHexDecode(t *testing.T) {
+	hexcid := "f015512209d8453505bdc6f269678e16b3e56c2a2948a41f2c792617cc9611ed363c95b63"
+	c, err := Decode(hexcid)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if c.String() != "zb2rhhFAEMepUBbGyP1k8tGfz7BSciKXP6GHuUeUsJBaK6cqG" {
+		t.Fatal("hash value failed to round trip decoding from hex")
+	}
+}
