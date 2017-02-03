@@ -248,7 +248,7 @@ func (c *Cid) Prefix() Prefix {
 type Prefix struct {
 	Version  uint64
 	Codec    uint64
-	MhType   int
+	MhType   uint64
 	MhLength int
 }
 
@@ -302,7 +302,7 @@ func PrefixFromBytes(buf []byte) (Prefix, error) {
 	return Prefix{
 		Version:  vers,
 		Codec:    codec,
-		MhType:   int(mhtype),
+		MhType:   mhtype,
 		MhLength: int(mhlen),
 	}, nil
 }
