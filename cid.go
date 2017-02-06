@@ -3,6 +3,7 @@ package cid
 import (
 	"bytes"
 	"encoding/binary"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -209,7 +210,19 @@ func (c *Cid) UnmarshalJSON(b []byte) error {
 	if len(b) < 2 {
 		return fmt.Errorf("invalid cid json blob")
 	}
-	out, err := Decode(string(b[1 : len(b)-1]))
+	obj := struct {
+		CidTarget string `json:"/"`
+	}{}
+	err := json.Unmarshal(b, &obj)
+	if err != nil {
+		return err
+	}
+
+	if obj.CidTarget == "" {
+		return fmt.Errorf("cid was incorrectly formatted")
+	}
+
+	out, err := Decode(obj.CidTarget)
 	if err != nil {
 		return err
 	}
@@ -221,7 +234,7 @@ func (c *Cid) UnmarshalJSON(b []byte) error {
 }
 
 func (c *Cid) MarshalJSON() ([]byte, error) {
-	return []byte(fmt.Sprintf("\"%s\"", c.String())), nil
+	return []byte(fmt.Sprintf("{\"/\":\"%s\"}", c.String())), nil
 }
 
 func (c *Cid) KeyString() string {

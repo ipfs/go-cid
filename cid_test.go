@@ -2,6 +2,7 @@ package cid
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"strings"
@@ -198,5 +199,19 @@ func TestHexDecode(t *testing.T) {
 
 	if c.String() != "zb2rhhFAEMepUBbGyP1k8tGfz7BSciKXP6GHuUeUsJBaK6cqG" {
 		t.Fatal("hash value failed to round trip decoding from hex")
+	}
+}
+
+func TestFromJson(t *testing.T) {
+	cval := "zb2rhhFAEMepUBbGyP1k8tGfz7BSciKXP6GHuUeUsJBaK6cqG"
+	jsoncid := []byte(`{"/":"` + cval + `"}`)
+	var c Cid
+	err := json.Unmarshal(jsoncid, &c)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if c.String() != cval {
+		t.Fatal("json parsing failed")
 	}
 }
