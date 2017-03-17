@@ -4,13 +4,15 @@ go-cid
 [![](https://img.shields.io/badge/made%20by-Protocol%20Labs-blue.svg?style=flat-square)](http://ipn.io)
 [![](https://img.shields.io/badge/project-IPFS-blue.svg?style=flat-square)](http://ipfs.io/)
 [![](https://img.shields.io/badge/freenode-%23ipfs-blue.svg?style=flat-square)](http://webchat.freenode.net/?channels=%23ipfs)
+[![](https://img.shields.io/badge/readme%20style-standard-brightgreen.svg?style=flat-square)](https://github.com/RichardLitt/standard-readme)
+[![GoDoc](https://godoc.org/github.com/ipfs/go-cid?status.svg)](https://godoc.org/github.com/ipfs/go-cid)
 [![Coverage Status](https://coveralls.io/repos/github/ipfs/go-cid/badge.svg?branch=master)](https://coveralls.io/github/ipfs/go-cid?branch=master)
 [![Travis CI](https://travis-ci.org/ipfs/go-cid.svg?branch=master)](https://travis-ci.org/ipfs/go-cid)
 
-> A package to handle content IDs in go.
+> A package to handle content IDs in Go.
 
-This is an implementation in go of the [CID spec](https://github.com/ipld/cid).
-It is used in go-ipfs and related packages to refer to a typed hunk of data.
+This is an implementation in Go of the [CID spec](https://github.com/ipld/cid).
+It is used in `go-ipfs` and related packages to refer to a typed hunk of data.
 
 
 ## Table of Contents
@@ -23,20 +25,46 @@ It is used in go-ipfs and related packages to refer to a typed hunk of data.
 
 ## Install
 
+`go-cid` is a standard Go module which can be installed with:
+
+```sh
+go get github.com/ipfs/go-cid
+```
+
+Note that `go-cid` is packaged with Gx, so it is recommended to use Gx to install and use it (see Usage section).
+
+## Usage
+
+### Using Gx and Gx-go
+
+This module is packaged with [Gx](https://github.com/whyrusleeping/gx). In order to use it in your own project it is recommended that you:
+
+```sh
+go get -u github.com/whyrusleeping/gx
+go get -u github.com/whyrusleeping/gx-go
+cd <your-project-repository>
+gx init
+gx import github.com/ipfs/go-cid
+gx install --global
+gx-go --rewrite
+```
+
+Please check [Gx](https://github.com/whyrusleeping/gx) and [Gx-go](https://github.com/whyrusleeping/gx-go) documentation for more information.
+
+### Running tests
+
+Before running tests, please run:
+
 ```sh
 make deps
 ```
 
-## Examples
+This will make sure that dependencies are rewritten to known working versions.
 
-To use CIDs, import it in your code like:
-```go
-import "github.com/ipfs/go-cid"
-```
+### Examples
 
-Then, depending on how you want to use it, something like one of the following examples should work:
+#### Parsing string input from users
 
-### Parsing string input from users
 ```go
 // Create a cid from a marshaled string
 c, err := cid.Decode("zdvgqEMYmNeH5fKciougvQcfzMcNjF3Z1tPouJ8C7pc3pe63k")
@@ -45,7 +73,8 @@ if err != nil {...}
 fmt.Println("Got CID: ", c)
 ```
 
-### Creating a CID from scratch
+#### Creating a CID from scratch
+
 ```go
 // Create a cid manually by specifying the 'prefix' parameters
 pref := cid.Prefix{
@@ -62,7 +91,8 @@ if err != nil {...}
 fmt.Println("Created CID: ", c)
 ```
 
-### Check if two CIDs match
+#### Check if two CIDs match
+
 ```go
 // To test if two cid's are equivalent, be sure to use the 'Equals' method:
 if c1.Equals(c2) {
@@ -70,7 +100,8 @@ if c1.Equals(c2) {
 }
 ```
 
-### Check if some data matches a given CID
+#### Check if some data matches a given CID
+
 ```go
 // To check if some data matches a given cid, 
 // Get your CIDs prefix, and use that to sum the data in question:
