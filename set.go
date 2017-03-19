@@ -27,7 +27,7 @@ func (s *Set) Len() int {
 
 func (s *Set) Keys() []*Cid {
 	out := make([]*Cid, 0, len(s.set))
-	for k, _ := range s.set {
+	for k := range s.set {
 		c, _ := Cast([]byte(k))
 		out = append(out, c)
 	}
@@ -44,7 +44,7 @@ func (s *Set) Visit(c *Cid) bool {
 }
 
 func (s *Set) ForEach(f func(c *Cid) error) error {
-	for cs, _ := range s.set {
+	for cs := range s.set {
 		c, _ := Cast([]byte(cs))
 		err := f(c)
 		if err != nil {

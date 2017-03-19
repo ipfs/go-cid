@@ -202,6 +202,18 @@ func TestHexDecode(t *testing.T) {
 	}
 }
 
+func ExampleDecode() {
+	encoded := "zb2rhhFAEMepUBbGyP1k8tGfz7BSciKXP6GHuUeUsJBaK6cqG"
+	c, err := Decode(encoded)
+	if err != nil {
+		fmt.Printf("Error: %s", err)
+		return
+	}
+
+	fmt.Println(c)
+	// Output: zb2rhhFAEMepUBbGyP1k8tGfz7BSciKXP6GHuUeUsJBaK6cqG
+}
+
 func TestFromJson(t *testing.T) {
 	cval := "zb2rhhFAEMepUBbGyP1k8tGfz7BSciKXP6GHuUeUsJBaK6cqG"
 	jsoncid := []byte(`{"/":"` + cval + `"}`)

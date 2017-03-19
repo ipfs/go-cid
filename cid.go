@@ -14,6 +14,21 @@ import (
 
 const UnsupportedVersionString = "<unsupported cid version>"
 
+var (
+	// ErrVarintBuffSmall means that a buffer passed to the cid parser was not
+	// long enough, or did not contain an invalid cid
+	ErrVarintBuffSmall = errors.New("reading varint: buffer too small")
+
+	// ErrVarintTooBig means that the varint in the given cid was above the
+	// limit of 2^64
+	ErrVarintTooBig = errors.New("reading varint: varint bigger than 64bits" +
+		" and not supported")
+
+	// ErrCidTooShort means that the cid passed to decode was not long
+	// enough to be a valid Cid
+	ErrCidTooShort = errors.New("cid too short")
+)
+
 const (
 	Raw = 0x55
 
@@ -70,7 +85,7 @@ func Parse(v interface{}) (*Cid, error) {
 
 func Decode(v string) (*Cid, error) {
 	if len(v) < 2 {
-		return nil, fmt.Errorf("cid too short")
+		return nil, ErrCidTooShort
 	}
 
 	if len(v) == 46 && v[:2] == "Qm" {
@@ -89,12 +104,6 @@ func Decode(v string) (*Cid, error) {
 
 	return Cast(data)
 }
-
-var (
-	ErrVarintBuffSmall = errors.New("reading varint: buffer to small")
-	ErrVarintTooBig    = errors.New("reading varint: varint bigger than 64bits" +
-		" and not supported")
-)
 
 func uvError(read int) error {
 	switch {
