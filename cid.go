@@ -35,12 +35,19 @@ const (
 	DagProtobuf = 0x70
 	DagCBOR     = 0x71
 
-	EthereumBlock = 0x90
-	EthereumTx    = 0x91
-	BitcoinBlock  = 0xb0
-	BitcoinTx     = 0xb1
-	ZcashBlock    = 0xc0
-	ZcashTx       = 0xc1
+	EthBlock           = 0x90
+	EthBlockList       = 0x91
+	EthTxTrie          = 0x92
+	EthTx              = 0x93
+	EthTxReceiptTrie   = 0x94
+	EthTxReceipt       = 0x95
+	EthStateTrie       = 0x96
+	EthAccountSnapshot = 0x97
+	EthStorageTrie     = 0x98
+	BitcoinBlock       = 0xb0
+	BitcoinTx          = 0xb1
+	ZcashBlock         = 0xc0
+	ZcashTx            = 0xc1
 )
 
 func NewCidV0(h mh.Multihash) *Cid {
