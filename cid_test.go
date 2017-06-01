@@ -131,7 +131,7 @@ func Test16BytesVarint(t *testing.T) {
 
 func TestFuzzCid(t *testing.T) {
 	buf := make([]byte, 128)
-	for i := 0; i < 200; i++ {
+	for i := 0; i < 1000; i++ {
 		s := rand.Intn(128)
 		rand.Read(buf[:s])
 		_, _ = Cast(buf[:s])
