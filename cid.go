@@ -58,6 +58,8 @@ const (
 	DagProtobuf = 0x70
 	DagCBOR     = 0x71
 
+	GitRaw = 0x78
+
 	EthBlock           = 0x90
 	EthBlockList       = 0x91
 	EthTxTrie          = 0x92
