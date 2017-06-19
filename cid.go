@@ -47,6 +47,10 @@ var (
 	// ErrCidTooShort means that the cid passed to decode was not long
 	// enough to be a valid Cid
 	ErrCidTooShort = errors.New("cid too short")
+
+	// ErrInvalidEncoding means that selected encoding is not supported
+	// by this Cid version
+	ErrInvalidEncoding = errors.New("invalid base encoding")
 )
 
 // These are multicodec-packed content types. The should match
@@ -242,6 +246,22 @@ func (c *Cid) String() string {
 		}
 
 		return mbstr
+	default:
+		panic("not possible to reach this point")
+	}
+}
+
+// String returns the string representation of a Cid
+// encoded is selected base
+func (c *Cid) StringOfBase(base mbase.Encoding) (string, error) {
+	switch c.version {
+	case 0:
+		if base != mbase.Base58BTC {
+			return "", ErrInvalidEncoding
+		}
+		return c.hash.B58String(), nil
+	case 1:
+		return mbase.Encode(base, c.bytesV1())
 	default:
 		panic("not possible to reach this point")
 	}
