@@ -25,6 +25,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"strings"
 
 	mbase "github.com/multiformats/go-multibase"
@@ -120,6 +121,24 @@ func NewCidV1(codecType uint64, mhash mh.Multihash) *Cid {
 		version: 1,
 		codec:   codecType,
 		hash:    mhash,
+	}
+}
+
+func NewPrefixV0(mhType uint64) Prefix {
+	return Prefix{
+		MhType:   mhType,
+		MhLength: uint32(mh.DefaultLengths[mhType]),
+		Version:  0,
+		Codec:    DagProtobuf,
+	}
+}
+
+func NewPrefixV1(codecType uint64, mhType uint64) Prefix {
+	return Prefix{
+		MhType:   mhType,
+		MhLength: uint32(mh.DefaultLengths[mhType]),
+		Version:  1,
+		Codec:    codecType,
 	}
 }
 
@@ -390,7 +409,7 @@ func (c *Cid) Prefix() Prefix {
 	dec, _ := mh.Decode(c.hash) // assuming we got a valid multiaddr, this will not error
 	return Prefix{
 		MhType:   dec.Code,
-		MhLength: dec.Length,
+		MhLength: uint32(dec.Length),
 		Version:  c.version,
 		Codec:    c.codec,
 	}
@@ -404,13 +423,13 @@ type Prefix struct {
 	Version  uint64
 	Codec    uint64
 	MhType   uint64
-	MhLength int
+	MhLength uint32
 }
 
 // Sum uses the information in a prefix to perform a multihash.Sum()
 // and return a newly constructed Cid with the resulting multihash.
 func (p Prefix) Sum(data []byte) (*Cid, error) {
-	hash, err := mh.Sum(data, p.MhType, p.MhLength)
+	hash, err := mh.Sum(data, p.MhType, int(p.MhLength))
 	if err != nil {
 		return nil, err
 	}
@@ -461,10 +480,14 @@ func PrefixFromBytes(buf []byte) (Prefix, error) {
 		return Prefix{}, err
 	}
 
+	if mhlen > math.MaxInt32 {
+		return Prefix{}, errors.New("digest too long, supporting only <= 2^31-1")
+	}
+
 	return Prefix{
 		Version:  vers,
 		Codec:    codec,
 		MhType:   mhtype,
-		MhLength: int(mhlen),
+		MhLength: uint32(mhlen),
 	}, nil
 }
