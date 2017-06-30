@@ -79,6 +79,28 @@ const (
 	ZcashTx            = 0xc1
 )
 
+// Codecs maps the name of a codec to its type
+var Codecs = map[string]uint64{
+	"v0":                   DagProtobuf,
+	"raw":                  Raw,
+	"protobuf":             DagProtobuf,
+	"cbor":                 DagCBOR,
+	"git-raw":              GitRaw,
+	"eth-block":            EthBlock,
+	"eth-block-list":       EthBlockList,
+	"eth-tx-trie":          EthTxTrie,
+	"eth-tx":               EthTx,
+	"eth-tx-receipt-trie":  EthTxReceiptTrie,
+	"eth-tx-receipt":       EthTxReceipt,
+	"eth-state-trie":       EthStateTrie,
+	"eth-account-snapshot": EthAccountSnapshot,
+	"eth-storage-trie":     EthStorageTrie,
+	"bitcoin-block":        BitcoinBlock,
+	"bitcoin-tx":           BitcoinTx,
+	"zcash-block":          ZcashBlock,
+	"zcash-tx":             ZcashTx,
+}
+
 // NewCidV0 returns a Cid-wrapped multihash.
 // They exist to allow IPFS to work with Cids while keeping
 // compatibility with the plain-multihash format used used in IPFS.
