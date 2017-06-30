@@ -13,9 +13,9 @@ import (
 )
 
 // Copying the "silly test" idea from
-// makes it so changing the table accidentally has to happen twice.
 // https://github.com/multiformats/go-multihash/blob/7aa9f26a231c6f34f4e9fad52bf580fd36627285/multihash_test.go#L13
-var tCodes = map[byte]string{
+// Makes it so changing the table accidentally has to happen twice.
+var tCodecs = map[byte]string{
 	Raw:                "raw",
 	DagProtobuf:        "protobuf",
 	DagCBOR:            "cbor",
@@ -50,7 +50,11 @@ func assertEqual(t *testing.T, a, b *Cid) {
 }
 
 func TestTable(t *testing.T) {
-	for k, v := range tCodes {
+	if len(tCodecs) != len(Codecs)-1 {
+		t.Errorf("Item count mismatch in the Table of Codec. Should be %d, got %d", len(tCodecs)+1, len(Codecs))
+	}
+
+	for k, v := range tCodecs {
 		if Codecs[v] != k {
 			t.Errorf("Table mismatch: 0x%x %s", k, v)
 		}
