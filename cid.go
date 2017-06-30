@@ -80,7 +80,7 @@ const (
 )
 
 // Codecs maps the name of a codec to its type
-var Codecs = map[string]byte{
+var Codecs = map[string]uint64{
 	"v0":                   DagProtobuf,
 	"raw":                  Raw,
 	"protobuf":             DagProtobuf,

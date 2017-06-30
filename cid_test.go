@@ -15,7 +15,7 @@ import (
 // Copying the "silly test" idea from
 // https://github.com/multiformats/go-multihash/blob/7aa9f26a231c6f34f4e9fad52bf580fd36627285/multihash_test.go#L13
 // Makes it so changing the table accidentally has to happen twice.
-var tCodecs = map[byte]string{
+var tCodecs = map[uint64]string{
 	Raw:                "raw",
 	DagProtobuf:        "protobuf",
 	DagCBOR:            "cbor",
