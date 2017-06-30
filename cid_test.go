@@ -12,6 +12,29 @@ import (
 	mh "github.com/multiformats/go-multihash"
 )
 
+// Copying the "silly test" idea from
+// makes it so changing the table accidentally has to happen twice.
+// https://github.com/multiformats/go-multihash/blob/7aa9f26a231c6f34f4e9fad52bf580fd36627285/multihash_test.go#L13
+var tCodes = map[byte]string{
+	Raw:                "raw",
+	DagProtobuf:        "protobuf",
+	DagCBOR:            "cbor",
+	GitRaw:             "git-raw",
+	EthBlock:           "eth-block",
+	EthBlockList:       "eth-block-list",
+	EthTxTrie:          "eth-tx-trie",
+	EthTx:              "eth-tx",
+	EthTxReceiptTrie:   "eth-tx-receipt-trie",
+	EthTxReceipt:       "eth-tx-receipt",
+	EthStateTrie:       "eth-state-trie",
+	EthAccountSnapshot: "eth-account-snapshot",
+	EthStorageTrie:     "eth-storage-trie",
+	BitcoinBlock:       "bitcoin-block",
+	BitcoinTx:          "bitcoin-tx",
+	ZcashBlock:         "zcash-block",
+	ZcashTx:            "zcash-tx",
+}
+
 func assertEqual(t *testing.T, a, b *Cid) {
 	if a.codec != b.codec {
 		t.Fatal("mismatch on type")
@@ -23,6 +46,22 @@ func assertEqual(t *testing.T, a, b *Cid) {
 
 	if !bytes.Equal(a.hash, b.hash) {
 		t.Fatal("multihash mismatch")
+	}
+}
+
+func TestTable(t *testing.T) {
+	for k, v := range tCodes {
+		if Codecs[v] != k {
+			t.Errorf("Table mismatch: 0x%x %s", k, v)
+		}
+	}
+}
+
+// The table returns cid.DagProtobuf for "v0"
+// so we test it apart
+func TestTableForV0(t *testing.T) {
+	if Codecs["v0"] != DagProtobuf {
+		t.Error("Table mismatch: Codecs[\"v0\"] should resolve to DagProtobuf (0x70)")
 	}
 }
 
@@ -77,7 +116,7 @@ func TestBasesMarshaling(t *testing.T) {
 
 	assertEqual(t, cid, out)
 
-	testBases := []mbase.Encoding {
+	testBases := []mbase.Encoding{
 		mbase.Base16,
 		mbase.Base32,
 		mbase.Base32hex,
