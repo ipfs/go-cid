@@ -77,7 +77,7 @@ func TestBasicMarshaling(t *testing.T) {
 
 	cid := &Cid{
 		codec:   7,
-		version: 1,
+		version: CIDv1,
 		hash:    h,
 	}
 
@@ -107,7 +107,7 @@ func TestBasesMarshaling(t *testing.T) {
 
 	cid := &Cid{
 		codec:   7,
-		version: 1,
+		version: CIDv1,
 		hash:    h,
 	}
 
@@ -168,7 +168,7 @@ func TestV0Handling(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if cid.version != 0 {
+	if cid.version != CIDv0 {
 		t.Fatal("should have gotten version 0 cid")
 	}
 
@@ -266,7 +266,7 @@ func TestParse(t *testing.T) {
 		if err != nil {
 			return err
 		}
-		if cid.version != 0 {
+		if cid.version != CIDv0 {
 			return fmt.Errorf("expected version 0, got %s", string(cid.version))
 		}
 		actual := cid.Hash().B58String()

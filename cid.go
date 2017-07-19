@@ -53,6 +53,14 @@ var (
 	ErrInvalidEncoding = errors.New("invalid base encoding")
 )
 
+// Version represents a CID version (i.e. CIDv0 or CIDv1).
+type Version uint64
+
+const (
+	CIDv0 Version = 0
+	CIDv1 Version = 1
+)
+
 // These are multicodec-packed content types. The should match
 // the codes described in the authoritative document:
 // https://github.com/multiformats/multicodec/blob/master/table.csv
@@ -107,7 +115,7 @@ var Codecs = map[string]uint64{
 // NewCidV1 should be used preferentially.
 func NewCidV0(mhash mh.Multihash) *Cid {
 	return &Cid{
-		version: 0,
+		version: CIDv0,
 		codec:   DagProtobuf,
 		hash:    mhash,
 	}
@@ -117,7 +125,7 @@ func NewCidV0(mhash mh.Multihash) *Cid {
 // content type.
 func NewCidV1(codecType uint64, mhash mh.Multihash) *Cid {
 	return &Cid{
-		version: 1,
+		version: CIDv1,
 		codec:   codecType,
 		hash:    mhash,
 	}
@@ -127,7 +135,7 @@ func NewCidV1(codecType uint64, mhash mh.Multihash) *Cid {
 // identifier. It is formed by a Version, a Codec (which indicates
 // a multicodec-packed content type) and a Multihash.
 type Cid struct {
-	version uint64
+	version Version
 	codec   uint64
 	hash    mh.Multihash
 }
@@ -217,7 +225,7 @@ func Cast(data []byte) (*Cid, error) {
 
 		return &Cid{
 			codec:   DagProtobuf,
-			version: 0,
+			version: CIDv0,
 			hash:    h,
 		}, nil
 	}
@@ -227,8 +235,8 @@ func Cast(data []byte) (*Cid, error) {
 		return nil, err
 	}
 
-	if vers != 0 && vers != 1 {
-		return nil, fmt.Errorf("invalid cid version number: %d", vers)
+	if vers != uint64(CIDv0) && vers != uint64(CIDv1) {
+		return nil, fmt.Errorf("invalid cid version number: %v", vers)
 	}
 
 	codec, cn := binary.Uvarint(data[n:])
@@ -243,7 +251,7 @@ func Cast(data []byte) (*Cid, error) {
 	}
 
 	return &Cid{
-		version: vers,
+		version: Version(vers),
 		codec:   codec,
 		hash:    h,
 	}, nil
@@ -259,9 +267,9 @@ func (c *Cid) Type() uint64 {
 // multibase string.
 func (c *Cid) String() string {
 	switch c.version {
-	case 0:
+	case CIDv0:
 		return c.hash.B58String()
-	case 1:
+	case CIDv1:
 		mbstr, err := mbase.Encode(mbase.Base58BTC, c.bytesV1())
 		if err != nil {
 			panic("should not error with hardcoded mbase: " + err.Error())
@@ -269,7 +277,8 @@ func (c *Cid) String() string {
 
 		return mbstr
 	default:
-		panic("not possible to reach this point")
+		// this panic should never happen
+		panic(fmt.Sprintf("CID has invalid version: %v", c.version))
 	}
 }
 
@@ -277,15 +286,16 @@ func (c *Cid) String() string {
 // encoded is selected base
 func (c *Cid) StringOfBase(base mbase.Encoding) (string, error) {
 	switch c.version {
-	case 0:
+	case CIDv0:
 		if base != mbase.Base58BTC {
 			return "", ErrInvalidEncoding
 		}
 		return c.hash.B58String(), nil
-	case 1:
+	case CIDv1:
 		return mbase.Encode(base, c.bytesV1())
 	default:
-		panic("not possible to reach this point")
+		// this panic should never happen
+		panic(fmt.Sprintf("CID has invalid version: %v", c.version))
 	}
 }
 
@@ -299,12 +309,13 @@ func (c *Cid) Hash() mh.Multihash {
 // with Cast().
 func (c *Cid) Bytes() []byte {
 	switch c.version {
-	case 0:
+	case CIDv0:
 		return c.bytesV0()
-	case 1:
+	case CIDv1:
 		return c.bytesV1()
 	default:
-		panic("not possible to reach this point")
+		// this panic should never happen
+		panic(fmt.Sprintf("CID has invalid version: %v", c.version))
 	}
 }
 
@@ -315,7 +326,7 @@ func (c *Cid) bytesV0() []byte {
 func (c *Cid) bytesV1() []byte {
 	// two 8 bytes (max) numbers plus hash
 	buf := make([]byte, 2*binary.MaxVarintLen64+len(c.hash))
-	n := binary.PutUvarint(buf, c.version)
+	n := binary.PutUvarint(buf, uint64(c.version))
 	n += binary.PutUvarint(buf[n:], c.codec)
 	cn := copy(buf[n:], c.hash)
 	if cn != len(c.hash) {
@@ -401,7 +412,7 @@ func (c *Cid) Prefix() Prefix {
 // and the Multihash length. It does not contains
 // any actual content information.
 type Prefix struct {
-	Version  uint64
+	Version  Version
 	Codec    uint64
 	MhType   uint64
 	MhLength int
@@ -416,12 +427,12 @@ func (p Prefix) Sum(data []byte) (*Cid, error) {
 	}
 
 	switch p.Version {
-	case 0:
+	case CIDv0:
 		return NewCidV0(hash), nil
-	case 1:
+	case CIDv1:
 		return NewCidV1(p.Codec, hash), nil
 	default:
-		return nil, fmt.Errorf("invalid cid version")
+		return nil, fmt.Errorf("invalid cid version: %v", p.Version)
 	}
 }
 
@@ -430,7 +441,7 @@ func (p Prefix) Sum(data []byte) (*Cid, error) {
 //     <version><codec><mh-type><mh-length>
 func (p Prefix) Bytes() []byte {
 	buf := make([]byte, 4*binary.MaxVarintLen64)
-	n := binary.PutUvarint(buf, p.Version)
+	n := binary.PutUvarint(buf, uint64(p.Version))
 	n += binary.PutUvarint(buf[n:], p.Codec)
 	n += binary.PutUvarint(buf[n:], uint64(p.MhType))
 	n += binary.PutUvarint(buf[n:], uint64(p.MhLength))
@@ -462,7 +473,7 @@ func PrefixFromBytes(buf []byte) (Prefix, error) {
 	}
 
 	return Prefix{
-		Version:  vers,
+		Version:  Version(vers),
 		Codec:    codec,
 		MhType:   mhtype,
 		MhLength: int(mhlen),
