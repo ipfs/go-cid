@@ -13,7 +13,7 @@ import (
 )
 
 func usage() {
-	fmt.Fprintf(os.Stderr, "usage: %s [-b multibase-code] <fmt-str> <cid> ...\n\n", os.Args[0])
+	fmt.Fprintf(os.Stderr, "usage: %s [-b multibase-code] [-v cid-version] <fmt-str> <cid> ...\n\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "<fmt-str> is either 'prefix' or a printf style format string:\n%s", fmtRef)
 	os.Exit(1)
 }
@@ -46,16 +46,38 @@ func main() {
 		usage()
 	}
 	newBase := mb.Encoding(-1)
+	var verConv func(cid *c.Cid) (*c.Cid, error)
 	args := os.Args[1:]
-	if args[0] == "-b" {
-		if len(args) < 2 {
-			usage()
+outer:
+	for {
+		switch args[0] {
+		case "-b":
+			if len(args) < 2 {
+				usage()
+			}
+			if len(args[1]) != 1 {
+				fmt.Fprintf(os.Stderr, "Error: Invalid multibase code: %s\n", args[1])
+				os.Exit(1)
+			}
+			newBase = mb.Encoding(args[1][0])
+			args = args[2:]
+		case "-v":
+			if len(args) < 2 {
+				usage()
+			}
+			switch args[1] {
+			case "0":
+				verConv = toCidV0
+			case "1":
+				verConv = toCidV1
+			default:
+				fmt.Fprintf(os.Stderr, "Error: Invalid cid version: %s\n", args[1])
+				os.Exit(1)
+			}
+			args = args[2:]
+		default:
+			break outer
 		}
-		if len(args[1]) != 1 {
-			fmt.Fprintf(os.Stderr, "Error: Invalid multibase code: %s\n", args[1])
-		}
-		newBase = mb.Encoding(args[1][0])
-		args = args[2:]
 	}
 	if len(args) < 2 {
 		usage()
@@ -71,14 +93,23 @@ func main() {
 	}
 	for _, cidStr := range args[1:] {
 		base, cid, err := decode(cidStr)
-		if newBase != -1 {
-			base = newBase
-		}
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %s: %v\n", cidStr, err)
 			fmt.Fprintf(os.Stdout, "!INVALID_CID!\n")
 			// Don't abort on a bad cid
 			continue
+		}
+		if newBase != -1 {
+			base = newBase
+		}
+		if verConv != nil {
+			cid, err = verConv(cid)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error: %s: %v\n", cidStr, err)
+				fmt.Fprintf(os.Stdout, "!CONVERSION_ERROR!\n")
+				// Don't abort on a bad conversion
+				continue
+			}
 		}
 		str, err := fmtCid(fmtStr, base, cid)
 		if err != nil {
@@ -220,4 +251,15 @@ func encode(base mb.Encoding, data []byte, strip bool) string {
 		return str[1:]
 	}
 	return str
+}
+
+func toCidV0(cid *c.Cid) (*c.Cid, error) {
+	if cid.Type() != c.DagProtobuf {
+		return nil, fmt.Errorf("can't convert non-protobuf nodes to cidv0")
+	}
+	return c.NewCidV0(cid.Hash()), nil
+}
+
+func toCidV1(cid *c.Cid) (*c.Cid, error) {
+	return c.NewCidV1(cid.Type(), cid.Hash()), nil
 }
