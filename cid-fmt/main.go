@@ -15,7 +15,7 @@ import (
 func usage() {
 	fmt.Fprintf(os.Stderr, "usage: %s [-b multibase-code] [-v cid-version] <fmt-str> <cid> ...\n\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "<fmt-str> is either 'prefix' or a printf style format string:\n%s", fmtRef)
-	os.Exit(1)
+	os.Exit(2)
 }
 
 const fmtRef = `
@@ -57,7 +57,7 @@ outer:
 			}
 			if len(args[1]) != 1 {
 				fmt.Fprintf(os.Stderr, "Error: Invalid multibase code: %s\n", args[1])
-				os.Exit(1)
+				os.Exit(2)
 			}
 			newBase = mb.Encoding(args[1][0])
 			args = args[2:]
@@ -72,7 +72,7 @@ outer:
 				verConv = toCidV1
 			default:
 				fmt.Fprintf(os.Stderr, "Error: Invalid cid version: %s\n", args[1])
-				os.Exit(1)
+				os.Exit(2)
 			}
 			args = args[2:]
 		default:
@@ -89,13 +89,14 @@ outer:
 	default:
 		if strings.IndexByte(fmtStr, '%') == -1 {
 			fmt.Fprintf(os.Stderr, "Error: Invalid format string: %s\n", fmtStr)
+			os.Exit(2)
 		}
 	}
 	for _, cidStr := range args[1:] {
 		base, cid, err := decode(cidStr)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %s: %v\n", cidStr, err)
 			fmt.Fprintf(os.Stdout, "!INVALID_CID!\n")
+			errorMsg("%s: %v", cidStr, err)
 			// Don't abort on a bad cid
 			continue
 		}
@@ -105,8 +106,8 @@ outer:
 		if verConv != nil {
 			cid, err = verConv(cid)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error: %s: %v\n", cidStr, err)
-				fmt.Fprintf(os.Stdout, "!CONVERSION_ERROR!\n")
+				fmt.Fprintf(os.Stdout, "!ERROR!\n")
+				errorMsg("%s: %v", cidStr, err)
 				// Don't abort on a bad conversion
 				continue
 			}
@@ -115,10 +116,20 @@ outer:
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 			// An error here means a bad format string, no point in continuing
-			os.Exit(1)
+			os.Exit(2)
 		}
 		fmt.Fprintf(os.Stdout, "%s\n", str)
 	}
+	os.Exit(exitCode)
+}
+
+var exitCode = 0
+
+func errorMsg(fmtStr string, a ...interface{}) {
+	fmt.Fprintf(os.Stderr, "Error: ")
+	fmt.Fprintf(os.Stderr, fmtStr, a...)
+	fmt.Fprintf(os.Stderr, "\n")
+	exitCode = 1
 }
 
 func decode(v string) (mb.Encoding, *c.Cid, error) {
@@ -150,6 +161,7 @@ const ERR_STR = "!ERROR!"
 func fmtCid(fmtStr string, base mb.Encoding, cid *c.Cid) (string, error) {
 	p := cid.Prefix()
 	out := new(bytes.Buffer)
+	var err error
 	for i := 0; i < len(fmtStr); i++ {
 		if fmtStr[i] != '%' {
 			out.WriteByte(fmtStr[i])
@@ -186,7 +198,7 @@ func fmtCid(fmtStr string, base mb.Encoding, cid *c.Cid) (string, error) {
 			dec, err := mh.Decode(cid.Hash())
 			if err != nil {
 				out.WriteString(ERR_STR)
-				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+				errorMsg("%v", err)
 				continue
 			}
 			out.WriteString(encode(base, dec.Digest, fmtStr[i] == 'D'))
@@ -194,7 +206,7 @@ func fmtCid(fmtStr string, base mb.Encoding, cid *c.Cid) (string, error) {
 			str, err := cid.StringOfBase(base)
 			if err != nil {
 				out.WriteString(ERR_STR)
-				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+				errorMsg("%v", err)
 				continue
 			}
 			out.WriteString(str)
@@ -208,11 +220,11 @@ func fmtCid(fmtStr string, base mb.Encoding, cid *c.Cid) (string, error) {
 				p.MhLength,
 			)
 		default:
-			return "", fmt.Errorf("unrecognized specifier in format string: %c\n", fmtStr[i])
+			return "", fmt.Errorf("unrecognized specifier in format string: %c", fmtStr[i])
 		}
 
 	}
-	return out.String(), nil
+	return out.String(), err
 }
 
 func baseToString(base mb.Encoding) string {
@@ -244,7 +256,7 @@ func hashToString(num uint64) string {
 func encode(base mb.Encoding, data []byte, strip bool) string {
 	str, err := mb.Encode(base, data)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		errorMsg("%v", err)
 		return ERR_STR
 	}
 	if strip {
