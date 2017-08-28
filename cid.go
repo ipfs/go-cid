@@ -101,6 +101,27 @@ var Codecs = map[string]uint64{
 	"zcash-tx":             ZcashTx,
 }
 
+// CodecToStr maps the numeric codec to its name
+var CodecToStr = map[uint64]string{
+	Raw:                "raw",
+	DagProtobuf:        "protobuf",
+	DagCBOR:            "cbor",
+	GitRaw:             "git-raw",
+	EthBlock:           "eth-block",
+	EthBlockList:       "eth-block-list",
+	EthTxTrie:          "eth-tx-trie",
+	EthTx:              "eth-tx",
+	EthTxReceiptTrie:   "eth-tx-receipt-trie",
+	EthTxReceipt:       "eth-tx-receipt",
+	EthStateTrie:       "eth-state-trie",
+	EthAccountSnapshot: "eth-account-snapshot",
+	EthStorageTrie:     "eth-storage-trie",
+	BitcoinBlock:       "bitcoin-block",
+	BitcoinTx:          "bitcoin-tx",
+	ZcashBlock:         "zcash-block",
+	ZcashTx:            "zcash-tx",
+}
+
 // NewCidV0 returns a Cid-wrapped multihash.
 // They exist to allow IPFS to work with Cids while keeping
 // compatibility with the plain-multihash format used used in IPFS.
