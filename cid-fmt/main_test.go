@@ -38,8 +38,7 @@ func TestFmt(t *testing.T) {
 		{"cidv1", -1, "%M", "QmYFbmndVP7QqAVWyKhpmMuQHMaD88pkK57RgYVimmoh5H"},
 		{"cidv1", -1, "%d", "zAux4gVVsLRMXtsZ9fd3tFEZN4jGYB6kP37fgoZNTc11H"},
 		{"cidv1", -1, "%D", "Aux4gVVsLRMXtsZ9fd3tFEZN4jGYB6kP37fgoZNTc11H"},
-		{"cidv1", 'B', "%s", "bAFYBEIETJGSRL3EQPQPCABV3G6IUBYTSIFVQ24XRRHD3JUETSKLTGQ7DJA"},
-		// note: ^ "bAFYB.." should probably be "BAFYB.." (upper case b)
+		{"cidv1", 'B', "%s", "BAFYBEIETJGSRL3EQPQPCABV3G6IUBYTSIFVQ24XRRHD3JUETSKLTGQ7DJA"},
 		{"cidv1", 'B', "%S", "AFYBEIETJGSRL3EQPQPCABV3G6IUBYTSIFVQ24XRRHD3JUETSKLTGQ7DJA"},
 		{"cidv1", 'B', "%B%S", "BAFYBEIETJGSRL3EQPQPCABV3G6IUBYTSIFVQ24XRRHD3JUETSKLTGQ7DJA"},
 	}
@@ -83,7 +82,7 @@ func TestCidConv(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cid.String() !=  cidv1 {
+	if cid.String() != cidv1 {
 		t.Fatal("conversion failure")
 	}
 	cid, err = toCidV0(cid)
