@@ -37,8 +37,8 @@ const fmtRef = `
    %s cid string encoded in base %b without multibase prefix
    %P cid prefix: %v-%c-%h-%L
 
-(1) For CID version 0 the multibase must be base58btc and no prefix is
-used.  For Cid version 1 the multibase prefix is included.
+(1) If the CID version is 0 and the multibase is base58btc no prefix
+is used.  For all other cases the multibase prefix is included.
 `
 
 func main() {

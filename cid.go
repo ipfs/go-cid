@@ -299,10 +299,11 @@ func (c *Cid) String() string {
 func (c *Cid) StringOfBase(base mbase.Encoding) (string, error) {
 	switch c.version {
 	case 0:
-		if base != mbase.Base58BTC {
-			return "", ErrInvalidEncoding
+		if base == mbase.Base58BTC {
+			return c.hash.B58String(), nil
+		} else {
+			return mbase.Encode(base, c.bytesV0())
 		}
-		return c.hash.B58String(), nil
 	case 1:
 		return mbase.Encode(base, c.bytesV1())
 	default:
