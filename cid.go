@@ -73,8 +73,11 @@ const (
 	EthStateTrie       = 0x96
 	EthAccountSnapshot = 0x97
 	EthStorageTrie     = 0x98
+	EthEvmCode         = 0x99
+
 	BitcoinBlock       = 0xb0
 	BitcoinTx          = 0xb1
+
 	ZcashBlock         = 0xc0
 	ZcashTx            = 0xc1
 )
@@ -94,6 +97,7 @@ var Codecs = map[string]uint64{
 	"eth-tx-receipt":       EthTxReceipt,
 	"eth-state-trie":       EthStateTrie,
 	"eth-account-snapshot": EthAccountSnapshot,
+	"eth-evm-code":         EthEvmCode,
 	"eth-storage-trie":     EthStorageTrie,
 	"bitcoin-block":        BitcoinBlock,
 	"bitcoin-tx":           BitcoinTx,
@@ -116,6 +120,7 @@ var CodecToStr = map[uint64]string{
 	EthStateTrie:       "eth-state-trie",
 	EthAccountSnapshot: "eth-account-snapshot",
 	EthStorageTrie:     "eth-storage-trie",
+	EthEvmCode:         "eth-evm-code",
 	BitcoinBlock:       "bitcoin-block",
 	BitcoinTx:          "bitcoin-tx",
 	ZcashBlock:         "zcash-block",
