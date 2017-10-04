@@ -29,6 +29,7 @@ var tCodecs = map[uint64]string{
 	EthStateTrie:       "eth-state-trie",
 	EthAccountSnapshot: "eth-account-snapshot",
 	EthStorageTrie:     "eth-storage-trie",
+	EthEvmCode:         "eth-evm-code",
 	BitcoinBlock:       "bitcoin-block",
 	BitcoinTx:          "bitcoin-tx",
 	ZcashBlock:         "zcash-block",
