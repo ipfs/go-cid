@@ -137,7 +137,7 @@ func TestBasesMarshaling(t *testing.T) {
 	for _, b := range testBases {
 		s, err := cid.StringOfBase(b)
 		if err != nil {
-			t.Fatal(err)
+			t.Fatal(err, b)
 		}
 
 		if s[0] != byte(b) {
