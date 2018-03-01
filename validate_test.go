@@ -30,14 +30,17 @@ func TestValidateCids(t *testing.T) {
 
 	assertFalse(IsGoodHash(mh.BLAKE2B_MIN + 5))
 
-	mhcid := func(code, length uint64) *Cid {
-		p := NewPrefixV1(DagCBOR, code)
-		p.MhLength = int(length)
-		cid, err := p.Sum([]byte{})
+	mhcid := func(code uint64, length int) *Cid {
+		c := &Cid{
+			version: 1,
+			codec:   DagCBOR,
+		}
+		mhash, err := mh.Sum([]byte{}, code, length)
 		if err != nil {
 			t.Fatal(err)
 		}
-		return cid
+		c.hash = mhash
+		return c
 	}
 
 	cases := []struct {
