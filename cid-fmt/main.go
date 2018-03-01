@@ -138,12 +138,9 @@ func decode(v string) (mb.Encoding, *c.Cid, error) {
 	}
 
 	if len(v) == 46 && v[:2] == "Qm" {
-		hash, err := mh.FromB58String(v)
-		if err != nil {
-			return 0, nil, err
-		}
+		cid, err := c.Decode(v)
 
-		return mb.Base58BTC, c.NewCidV0(hash), nil
+		return mb.Base58BTC, cid, err
 	}
 
 	base, data, err := mb.Decode(v)
@@ -269,9 +266,9 @@ func toCidV0(cid *c.Cid) (*c.Cid, error) {
 	if cid.Type() != c.DagProtobuf {
 		return nil, fmt.Errorf("can't convert non-protobuf nodes to cidv0")
 	}
-	return c.NewCidV0(cid.Hash()), nil
+	return c.NewCidV0(cid.Hash())
 }
 
 func toCidV1(cid *c.Cid) (*c.Cid, error) {
-	return c.NewCidV1(cid.Type(), cid.Hash()), nil
+	return c.NewCidV1(cid.Type(), cid.Hash())
 }
