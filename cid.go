@@ -51,6 +51,8 @@ var (
 	// ErrInvalidEncoding means that selected encoding is not supported
 	// by this Cid version
 	ErrInvalidEncoding = errors.New("invalid base encoding")
+
+	ErrCid0OnlySHA256 = errors.New("cidv0 accepts only SHA256 hashes of standard length")
 )
 
 // These are multicodec-packed content types. The should match
@@ -137,7 +139,7 @@ type Cid struct {
 // NewCidV1 should be used preferentially.
 func NewCidV0(mhash mh.Multihash) (*Cid, error) {
 	if mhash[0] != mh.SHA2_256 && mhash[1] != byte(mh.DefaultLengths[mh.SHA2_256]) {
-		return nil, errors.New("NewCidV0 accepts only SHA256 hashes of standard length")
+		return nil, ErrCid0OnlySHA256
 	}
 
 	c := &Cid{
