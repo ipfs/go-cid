@@ -77,6 +77,15 @@ const (
 	BitcoinTx          = 0xb1
 	ZcashBlock         = 0xc0
 	ZcashTx            = 0xc1
+
+	SHA1     = 0x11
+	SHA2_256 = 0x12
+	SHA2_512 = 0x13
+
+	Keccak224 = 0x1a
+	Keccak256 = 0x1b
+	Keccak384 = 0x1c
+	Keccak512 = 0x1d
 )
 
 // Codecs maps the name of a codec to its type
@@ -99,6 +108,13 @@ var Codecs = map[string]uint64{
 	"bitcoin-tx":           BitcoinTx,
 	"zcash-block":          ZcashBlock,
 	"zcash-tx":             ZcashTx,
+	"keccak-224":           Keccak224,
+	"keccak-256":           Keccak256,
+	"keccak-384":           Keccak384,
+	"keccak-512":           Keccak512,
+	"sha1":                 SHA1,
+	"sha2-256":             SHA2_256,
+	"sha2-512":             SHA2_512,
 }
 
 // CodecToStr maps the numeric codec to its name
@@ -120,6 +136,13 @@ var CodecToStr = map[uint64]string{
 	BitcoinTx:          "bitcoin-tx",
 	ZcashBlock:         "zcash-block",
 	ZcashTx:            "zcash-tx",
+	Keccak224:          "keccak-224",
+	Keccak256:          "keccak-256",
+	Keccak384:          "keccak-384",
+	Keccak512:          "keccak-512",
+	SHA1:               "sha1",
+	SHA2_256:           "sha2-256",
+	SHA2_512:           "sha2-512",
 }
 
 // NewCidV0 returns a Cid-wrapped multihash.
