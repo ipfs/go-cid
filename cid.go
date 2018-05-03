@@ -423,7 +423,7 @@ func (c Cid) MarshalJSON() ([]byte, error) {
 
 // KeyString casts the result of cid.Bytes() as a string, and returns it.
 func (c Cid) KeyString() string {
-	return string(c.Bytes())
+	return string(c)
 }
 
 // Loggable returns a Loggable (as defined by
