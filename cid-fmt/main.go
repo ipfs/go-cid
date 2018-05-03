@@ -20,7 +20,7 @@ func usage() {
 
 const fmtRef = `
    %% literal %
-   %b multibase name 
+   %b multibase name
    %B multibase code
    %v version string
    %V version number
@@ -46,7 +46,7 @@ func main() {
 		usage()
 	}
 	newBase := mb.Encoding(-1)
-	var verConv func(cid *c.Cid) (*c.Cid, error)
+	var verConv func(cid c.Cid) (c.Cid, error)
 	args := os.Args[1:]
 outer:
 	for {
@@ -132,7 +132,7 @@ func errorMsg(fmtStr string, a ...interface{}) {
 	exitCode = 1
 }
 
-func decode(v string) (mb.Encoding, *c.Cid, error) {
+func decode(v string) (mb.Encoding, c.Cid, error) {
 	if len(v) < 2 {
 		return 0, nil, c.ErrCidTooShort
 	}
@@ -158,7 +158,7 @@ func decode(v string) (mb.Encoding, *c.Cid, error) {
 
 const ERR_STR = "!ERROR!"
 
-func fmtCid(fmtStr string, base mb.Encoding, cid *c.Cid) (string, error) {
+func fmtCid(fmtStr string, base mb.Encoding, cid c.Cid) (string, error) {
 	p := cid.Prefix()
 	out := new(bytes.Buffer)
 	var err error
@@ -265,13 +265,13 @@ func encode(base mb.Encoding, data []byte, strip bool) string {
 	return str
 }
 
-func toCidV0(cid *c.Cid) (*c.Cid, error) {
+func toCidV0(cid c.Cid) (c.Cid, error) {
 	if cid.Type() != c.DagProtobuf {
 		return nil, fmt.Errorf("can't convert non-protobuf nodes to cidv0")
 	}
 	return c.NewCidV0(cid.Hash()), nil
 }
 
-func toCidV1(cid *c.Cid) (*c.Cid, error) {
+func toCidV1(cid c.Cid) (c.Cid, error) {
 	return c.NewCidV1(cid.Type(), cid.Hash()), nil
 }

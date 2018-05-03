@@ -35,16 +35,16 @@ var tCodecs = map[uint64]string{
 	ZcashTx:            "zcash-tx",
 }
 
-func assertEqual(t *testing.T, a, b *Cid) {
-	if a.codec != b.codec {
+func assertEqual(t *testing.T, a, b Cid) {
+	if a.codec() != b.codec() {
 		t.Fatal("mismatch on type")
 	}
 
-	if a.version != b.version {
+	if a.version() != b.version() {
 		t.Fatal("mismatch on version")
 	}
 
-	if !bytes.Equal(a.hash, b.hash) {
+	if !bytes.Equal(a.Hash(), b.Hash()) {
 		t.Fatal("multihash mismatch")
 	}
 }
@@ -75,11 +75,7 @@ func TestBasicMarshaling(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cid := &Cid{
-		codec:   7,
-		version: 1,
-		hash:    h,
-	}
+	cid := newCid(1, 7, h)
 
 	data := cid.Bytes()
 
@@ -105,11 +101,7 @@ func TestBasesMarshaling(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cid := &Cid{
-		codec:   7,
-		version: 1,
-		hash:    h,
-	}
+	cid := newCid(1, 7, h)
 
 	data := cid.Bytes()
 
@@ -168,12 +160,12 @@ func TestV0Handling(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if cid.version != 0 {
+	if cid.version() != 0 {
 		t.Fatal("should have gotten version 0 cid")
 	}
 
-	if cid.hash.B58String() != old {
-		t.Fatal("marshaling roundtrip failed")
+	if cid.Hash().B58String() != old {
+		t.Fatalf("marshaling roundtrip failed: %s != %s", cid.Hash().B58String(), old)
 	}
 
 	if cid.String() != old {
@@ -279,9 +271,7 @@ func TestPrefixRoundtrip(t *testing.T) {
 func Test16BytesVarint(t *testing.T) {
 	data := []byte("this is some test content")
 	hash, _ := mh.Sum(data, mh.SHA2_256, -1)
-	c := NewCidV1(DagCBOR, hash)
-
-	c.codec = 1 << 63
+	c := newCid(1, 1<<63, hash)
 	_ = c.Bytes()
 }
 
@@ -324,8 +314,8 @@ func TestParse(t *testing.T) {
 		if err != nil {
 			return err
 		}
-		if cid.version != 0 {
-			return fmt.Errorf("expected version 0, got %s", string(cid.version))
+		if cid.version() != 0 {
+			return fmt.Errorf("expected version 0, got %s", string(cid.version()))
 		}
 		actual := cid.Hash().B58String()
 		if actual != expected {
@@ -388,12 +378,34 @@ func BenchmarkStringV1(b *testing.B) {
 	data := []byte("this is some test content")
 	hash, _ := mh.Sum(data, mh.SHA2_256, -1)
 	cid := NewCidV1(Raw, hash)
+
+	b.ReportAllocs()
 	b.ResetTimer()
+
 	count := 0
 	for i := 0; i < b.N; i++ {
 		count += len(cid.String())
 	}
 	if count != 49*b.N {
+		b.FailNow()
+	}
+}
+
+// making sure we don't allocate when returning bytes
+func BenchmarkBytesV1(b *testing.B) {
+	data := []byte("this is some test content")
+	hash, _ := mh.Sum(data, mh.SHA2_256, -1)
+	cid := NewCidV1(Raw, hash)
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	count := 0
+	for i := 0; i < b.N; i++ {
+		count += len(cid.Bytes())
+		count += len([]byte(cid))
+	}
+	if count != 36*2*b.N {
 		b.FailNow()
 	}
 }
