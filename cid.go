@@ -163,16 +163,19 @@ func newCid(version, codecType uint64, mhash mh.Multihash) Cid {
 // - version uvarint
 // - codec uvarint
 // - hash mh.Multihash
-type Cid []byte
+type Cid string
+
+var EmptyCid = Cid(string([]byte{}))
 
 func (c Cid) version() uint64 {
-	v, _ := binary.Uvarint(c)
+	v, _ := binary.Uvarint([]byte(c))
 	return v
 }
 
 func (c Cid) codec() uint64 {
-	_, n := binary.Uvarint(c)
-	codec, _ := binary.Uvarint(c[n:])
+	bytes := []byte(c)
+	_, n := binary.Uvarint(bytes)
+	codec, _ := binary.Uvarint(bytes[n:])
 	return codec
 }
 
@@ -192,7 +195,7 @@ func Parse(v interface{}) (Cid, error) {
 	case Cid:
 		return v2, nil
 	default:
-		return nil, fmt.Errorf("can't parse %+v as Cid", v2)
+		return EmptyCid, fmt.Errorf("can't parse %+v as Cid", v2)
 	}
 }
 
@@ -210,13 +213,13 @@ func Parse(v interface{}) (Cid, error) {
 // as B58-encoded multihashes.
 func Decode(v string) (Cid, error) {
 	if len(v) < 2 {
-		return nil, ErrCidTooShort
+		return EmptyCid, ErrCidTooShort
 	}
 
 	if len(v) == 46 && v[:2] == "Qm" {
 		hash, err := mh.FromB58String(v)
 		if err != nil {
-			return nil, err
+			return EmptyCid, err
 		}
 
 		return NewCidV0(hash), nil
@@ -224,7 +227,7 @@ func Decode(v string) (Cid, error) {
 
 	_, data, err := mbase.Decode(v)
 	if err != nil {
-		return nil, err
+		return EmptyCid, err
 	}
 
 	return Cast(data)
@@ -278,7 +281,7 @@ func Cast(data []byte) (Cid, error) {
 	if len(data) == 34 && data[0] == 18 && data[1] == 32 {
 		h, err := mh.Cast(data)
 		if err != nil {
-			return nil, err
+			return EmptyCid, err
 		}
 
 		return NewCidV0(h), nil
@@ -286,22 +289,22 @@ func Cast(data []byte) (Cid, error) {
 
 	vers, n := binary.Uvarint(data)
 	if err := uvError(n); err != nil {
-		return nil, err
+		return EmptyCid, err
 	}
 
 	if vers != 0 && vers != 1 {
-		return nil, fmt.Errorf("invalid cid version number: %d", vers)
+		return EmptyCid, fmt.Errorf("invalid cid version number: %d", vers)
 	}
 
 	_, cn := binary.Uvarint(data[n:])
 	if err := uvError(cn); err != nil {
-		return nil, err
+		return EmptyCid, err
 	}
 
 	rest := data[n+cn:]
 	h, err := mh.Cast(rest)
 	if err != nil {
-		return nil, err
+		return EmptyCid, err
 	}
 
 	return Cid(data[0 : n+cn+len(h)]), nil
@@ -363,12 +366,13 @@ func (c Cid) Encode(base mbase.Encoder) string {
 
 // Hash returns the multihash contained by a Cid.
 func (c Cid) Hash() mh.Multihash {
+	bytes := []byte(c)
 	// skip version length
-	_, n1 := binary.Uvarint(c)
+	_, n1 := binary.Uvarint(bytes)
 	// skip codec length
-	_, n2 := binary.Uvarint(c[n1:])
+	_, n2 := binary.Uvarint(bytes[n1:])
 
-	return mh.Multihash(c[n1+n2:])
+	return mh.Multihash(bytes[n1+n2:])
 }
 
 // Bytes returns the byte representation of a Cid.
@@ -397,7 +401,8 @@ func (c Cid) bytesV1() []byte {
 // In order for two Cids to be considered equal, the
 // Version, the Codec and the Multihash must match.
 func (c Cid) Equals(o Cid) bool {
-	return bytes.Equal(c, o)
+	// TODO: can we use regular string equality?
+	return bytes.Equal([]byte(c), []byte(o))
 }
 
 // UnmarshalJSON parses the JSON representation of a Cid.
@@ -479,7 +484,7 @@ type Prefix struct {
 func (p Prefix) Sum(data []byte) (Cid, error) {
 	hash, err := mh.Sum(data, p.MhType, p.MhLength)
 	if err != nil {
-		return nil, err
+		return EmptyCid, err
 	}
 
 	switch p.Version {
@@ -488,7 +493,7 @@ func (p Prefix) Sum(data []byte) (Cid, error) {
 	case 1:
 		return NewCidV1(p.Codec, hash), nil
 	default:
-		return nil, fmt.Errorf("invalid cid version")
+		return EmptyCid, fmt.Errorf("invalid cid version")
 	}
 }
 
