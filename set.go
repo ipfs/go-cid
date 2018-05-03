@@ -3,28 +3,28 @@ package cid
 // Set is a implementation of a set of Cids, that is, a structure
 // to which holds a single copy of every Cids that is added to it.
 type Set struct {
-	set map[string]struct{}
+	set map[Cid]struct{}
 }
 
 // NewSet initializes and returns a new Set.
 func NewSet() *Set {
-	return &Set{set: make(map[string]struct{})}
+	return &Set{set: make(map[Cid]struct{})}
 }
 
 // Add puts a Cid in the Set.
 func (s *Set) Add(c Cid) {
-	s.set[string(c.Bytes())] = struct{}{}
+	s.set[c] = struct{}{}
 }
 
 // Has returns if the Set contains a given Cid.
 func (s *Set) Has(c Cid) bool {
-	_, ok := s.set[string(c.Bytes())]
+	_, ok := s.set[c]
 	return ok
 }
 
 // Remove deletes a Cid from the Set.
 func (s *Set) Remove(c Cid) {
-	delete(s.set, string(c.Bytes()))
+	delete(s.set, c)
 }
 
 // Len returns how many elements the Set has.
@@ -36,8 +36,7 @@ func (s *Set) Len() int {
 func (s *Set) Keys() []Cid {
 	out := make([]Cid, 0, len(s.set))
 	for k := range s.set {
-		c, _ := Cast([]byte(k))
-		out = append(out, c)
+		out = append(out, k)
 	}
 	return out
 }

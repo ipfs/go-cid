@@ -134,13 +134,13 @@ func errorMsg(fmtStr string, a ...interface{}) {
 
 func decode(v string) (mb.Encoding, c.Cid, error) {
 	if len(v) < 2 {
-		return 0, nil, c.ErrCidTooShort
+		return 0, c.EmptyCid, c.ErrCidTooShort
 	}
 
 	if len(v) == 46 && v[:2] == "Qm" {
 		hash, err := mh.FromB58String(v)
 		if err != nil {
-			return 0, nil, err
+			return 0, c.EmptyCid, err
 		}
 
 		return mb.Base58BTC, c.NewCidV0(hash), nil
@@ -148,7 +148,7 @@ func decode(v string) (mb.Encoding, c.Cid, error) {
 
 	base, data, err := mb.Decode(v)
 	if err != nil {
-		return 0, nil, err
+		return 0, c.EmptyCid, err
 	}
 
 	cid, err := c.Cast(data)
@@ -267,7 +267,7 @@ func encode(base mb.Encoding, data []byte, strip bool) string {
 
 func toCidV0(cid c.Cid) (c.Cid, error) {
 	if cid.Type() != c.DagProtobuf {
-		return nil, fmt.Errorf("can't convert non-protobuf nodes to cidv0")
+		return c.EmptyCid, fmt.Errorf("can't convert non-protobuf nodes to cidv0")
 	}
 	return c.NewCidV0(cid.Hash()), nil
 }
