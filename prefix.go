@@ -34,3 +34,35 @@ func (p Prefix) Sum(data []byte) (*Cid, error) {
 		return nil, fmt.Errorf("invalid cid version")
 	}
 }
+
+var v0CidPrefix = Prefix{
+	Codec:    DagProtobuf,
+	MhLength: -1,
+	MhType:   mh.SHA2_256,
+	Version:  0,
+}
+
+var v1CidPrefix = Prefix{
+	Codec:    DagProtobuf,
+	MhLength: -1,
+	MhType:   mh.SHA2_256,
+	Version:  1,
+}
+
+// V0CidPrefix returns a prefix for CIDv0
+func V0CidPrefix() Prefix { return v0CidPrefix }
+
+// V1CidPrefix returns a prefix for CIDv1 with the default settings
+func V1CidPrefix() Prefix { return v1CidPrefix }
+
+// PrefixForCidVersion returns the Protobuf prefix for a given CID version
+func PrefixForCidVersion(version int) (Prefix, error) {
+	switch version {
+	case 0:
+		return v0CidPrefix, nil
+	case 1:
+		return v1CidPrefix, nil
+	default:
+		return Prefix{}, fmt.Errorf("unknown CID version: %d", version)
+	}
+}
