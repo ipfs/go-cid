@@ -45,18 +45,26 @@ func TestValidateCids(t *testing.T) {
 
 	cases := []struct {
 		cid *Cid
-		err error
+		err string
 	}{
-		{mhcid(mh.SHA2_256, 32), nil},
-		{mhcid(mh.SHA2_256, 16), ErrBelowMinimumHashLength},
-		{mhcid(mh.MURMUR3, 4), ErrPossiblyInsecureHashFunction},
+		{mhcid(mh.SHA2_256, 32), ""},
+		{mhcid(mh.SHA2_256, 16), "hashes must be at least 20 bytes long"},
+		{mhcid(mh.MURMUR3, 4), "potentially insecure hash functions not allowed"},
 	}
 
 	for i, cas := range cases {
-		if ValidateCid(cas.cid) != cas.err {
+		if errString(ValidateCid(cas.cid)) != cas.err {
 			t.Errorf("wrong result in case of %s (index %d). Expected: %s, got %s",
 				cas.cid, i, cas.err, ValidateCid(cas.cid))
 		}
 	}
 
+}
+
+func errString(err error) string {
+	if err == nil {
+		return ""
+	} else {
+		return err.Error()
+	}
 }

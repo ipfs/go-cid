@@ -6,9 +6,6 @@ import (
 	mh "github.com/multiformats/go-multihash"
 )
 
-var ErrPossiblyInsecureHashFunction = fmt.Errorf("potentially insecure hash functions not allowed")
-var ErrBelowMinimumHashLength = fmt.Errorf("hashes must be at least bytes long")
-
 const minimumHashLength = 20
 
 var goodset = map[uint64]bool{
@@ -50,11 +47,11 @@ func IsGoodHash(code uint64) bool {
 func ValidateCid(c *Cid) error {
 	pref := c.Prefix()
 	if !IsGoodHash(pref.MhType) {
-		return ErrPossiblyInsecureHashFunction
+		return fmt.Errorf("potentially insecure hash functions not allowed")
 	}
 
 	if pref.MhType != mh.ID && pref.MhLength < minimumHashLength {
-		return ErrBelowMinimumHashLength
+		return fmt.Errorf("hashes must be at least %d bytes long", minimumHashLength)
 	}
 
 	return nil
