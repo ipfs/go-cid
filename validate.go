@@ -46,6 +46,13 @@ func IsGoodHash(code uint64) bool {
 
 func ValidateCid(c *Cid) error {
 	pref := c.Prefix()
+	if pref.Version == 0 {
+		if pref.MhType != mh.SHA2_256 || pref.MhLength != mh.DefaultLengths[mh.SHA2_256] {
+			return ErrCid0OnlySHA256
+		}
+		return nil
+	}
+
 	if !IsGoodHash(pref.MhType) {
 		return fmt.Errorf("potentially insecure hash functions not allowed")
 	}

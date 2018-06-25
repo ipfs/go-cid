@@ -30,7 +30,20 @@ func TestValidateCids(t *testing.T) {
 
 	assertFalse(IsGoodHash(mh.BLAKE2B_MIN + 5))
 
-	mhcid := func(code uint64, length int) *Cid {
+	mhcid0 := func(code uint64, length int) *Cid {
+		c := &Cid{
+			version: 0,
+			codec:   DagProtobuf,
+		}
+		mhash, err := mh.Sum([]byte{}, code, length)
+		if err != nil {
+			t.Fatal(err)
+		}
+		c.hash = mhash
+		return c
+	}
+
+	mhcid1 := func(code uint64, length int) *Cid {
 		c := &Cid{
 			version: 1,
 			codec:   DagCBOR,
@@ -47,9 +60,13 @@ func TestValidateCids(t *testing.T) {
 		cid *Cid
 		err string
 	}{
-		{mhcid(mh.SHA2_256, 32), ""},
-		{mhcid(mh.SHA2_256, 16), "hashes must be at least 20 bytes long"},
-		{mhcid(mh.MURMUR3, 4), "potentially insecure hash functions not allowed"},
+		{mhcid0(mh.SHA2_256, 32), ""},
+		{mhcid0(mh.SHA3_256, 32), "cidv0 accepts only SHA256 hashes of standard length"},
+		{mhcid0(mh.SHA2_256, 16), "cidv0 accepts only SHA256 hashes of standard length"},
+		{mhcid0(mh.MURMUR3, 4), "cidv0 accepts only SHA256 hashes of standard length"},
+		{mhcid1(mh.SHA2_256, 32), ""},
+		{mhcid1(mh.SHA2_256, 16), "hashes must be at least 20 bytes long"},
+		{mhcid1(mh.MURMUR3, 4), "potentially insecure hash functions not allowed"},
 	}
 
 	for i, cas := range cases {

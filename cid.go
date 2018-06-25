@@ -138,14 +138,14 @@ type Cid struct {
 // compatibility with the plain-multihash format used used in IPFS.
 // NewCidV1 should be used preferentially.
 func NewCidV0(mhash mh.Multihash) (*Cid, error) {
-	if mhash[0] != mh.SHA2_256 && mhash[1] != byte(mh.DefaultLengths[mh.SHA2_256]) {
-		return nil, ErrCid0OnlySHA256
-	}
-
 	c := &Cid{
 		version: 0,
 		codec:   DagProtobuf,
 		hash:    mhash,
+	}
+	err := ValidateCid(c)
+	if err != nil {
+		return nil, err
 	}
 	return c, nil
 }
