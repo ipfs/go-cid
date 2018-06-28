@@ -145,6 +145,8 @@ func NewCidV1(codecType uint64, mhash mh.Multihash) *Cid {
 }
 
 // NewPrefixV0 returns a CIDv0 prefix with the specified multihash type.
+//
+// Deprecated: Please use the Format constructors (e.g., NewFormat).
 func NewPrefixV0(mhType uint64) Prefix {
 	return Prefix{
 		MhType:   mhType,
@@ -156,6 +158,8 @@ func NewPrefixV0(mhType uint64) Prefix {
 
 // NewPrefixV1 returns a CIDv1 prefix with the specified codec and multihash
 // type.
+//
+// Deprecated: Please use the Format constructors (e.g., NewFormat).
 func NewPrefixV1(codecType uint64, mhType uint64) Prefix {
 	return Prefix{
 		MhType:   mhType,
