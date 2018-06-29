@@ -145,6 +145,7 @@ func NewCidV1(codecType uint64, mhash mh.Multihash) *Cid {
 }
 
 // NewPrefixV0 returns a CIDv0 prefix with the specified multihash type.
+// DEPRECATED: Use FormatV0
 func NewPrefixV0(mhType uint64) Prefix {
 	return Prefix{
 		MhType:   mhType,
@@ -156,6 +157,7 @@ func NewPrefixV0(mhType uint64) Prefix {
 
 // NewPrefixV1 returns a CIDv1 prefix with the specified codec and multihash
 // type.
+// DEPRECATED: Use FormatV1
 func NewPrefixV1(codecType uint64, mhType uint64) Prefix {
 	return Prefix{
 		MhType:   mhType,
@@ -451,6 +453,7 @@ type Prefix struct {
 
 // Sum uses the information in a prefix to perform a multihash.Sum()
 // and return a newly constructed Cid with the resulting multihash.
+// DEPRECATED: Use PrefixToFormat(p).Sum(data)
 func (p Prefix) Sum(data []byte) (*Cid, error) {
 	hash, err := mh.Sum(data, p.MhType, p.MhLength)
 	if err != nil {
