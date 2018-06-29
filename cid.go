@@ -444,6 +444,8 @@ func (c *Cid) Prefix() Prefix {
 // that is, the Version, the Codec, the Multihash type
 // and the Multihash length. It does not contains
 // any actual content information.
+// NOTE: The use -1 in MhLength to mean default length is deprecated,
+//   use the PrefixV0 or PrefixV1 structures instead
 type Prefix struct {
 	Version  uint64
 	Codec    uint64
@@ -453,7 +455,6 @@ type Prefix struct {
 
 // Sum uses the information in a prefix to perform a multihash.Sum()
 // and return a newly constructed Cid with the resulting multihash.
-// DEPRECATED: Use PrefixToFormat(p).Sum(data)
 func (p Prefix) Sum(data []byte) (*Cid, error) {
 	hash, err := mh.Sum(data, p.MhType, p.MhLength)
 	if err != nil {
