@@ -409,6 +409,6 @@ func TestJsonRoundTrip(t *testing.T) {
 	var actual2 Cid
 	err = json.Unmarshal(enc, &actual2)
 	if !(*exp).Equals(&actual2) {
-		t.Fatal("cids not equal for *Cid")
+		t.Fatal("cids not equal for Cid")
 	}
 }
