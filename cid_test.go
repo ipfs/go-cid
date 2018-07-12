@@ -383,3 +383,32 @@ func TestFromJson(t *testing.T) {
 		t.Fatal("json parsing failed")
 	}
 }
+
+func TestJsonRoundTrip(t *testing.T) {
+	exp, err := Decode("zb2rhhFAEMepUBbGyP1k8tGfz7BSciKXP6GHuUeUsJBaK6cqG")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Verify it works for a *Cid.
+	enc, err := json.Marshal(exp)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var actual Cid
+	err = json.Unmarshal(enc, &actual)
+	if !exp.Equals(&actual) {
+		t.Fatal("cids not equal for *Cid")
+	}
+
+	// Verify it works for a Cid.
+	enc, err = json.Marshal(*exp)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var actual2 Cid
+	err = json.Unmarshal(enc, &actual2)
+	if !exp.Equals(&actual2) {
+		t.Fatal("cids not equal for Cid")
+	}
+}

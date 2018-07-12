@@ -410,7 +410,7 @@ func (c *Cid) UnmarshalJSON(b []byte) error {
 //
 // Note that this formatting comes from the IPLD specification
 // (https://github.com/ipld/specs/tree/master/ipld)
-func (c *Cid) MarshalJSON() ([]byte, error) {
+func (c Cid) MarshalJSON() ([]byte, error) {
 	return []byte(fmt.Sprintf("{\"/\":\"%s\"}", c.String())), nil
 }
 
