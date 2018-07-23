@@ -33,6 +33,8 @@ var tCodecs = map[uint64]string{
 	BitcoinTx:          "bitcoin-tx",
 	ZcashBlock:         "zcash-block",
 	ZcashTx:            "zcash-tx",
+	DecredBlock:        "decred-block",
+	DecredTx:           "decred-tx",
 }
 
 func assertEqual(t *testing.T, a, b *Cid) {
