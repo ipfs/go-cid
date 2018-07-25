@@ -6,6 +6,8 @@ import (
 
 type Format interface {
 	Sum(data []byte) (*Cid, error)
+	GetCodec() uint64
+	WithCodec(uint64) Format
 }
 
 type FormatV0 struct{}
@@ -34,12 +36,38 @@ func PrefixToFormat(p Prefix) Format {
 	}
 }
 
+func (p Prefix) GetCodec() uint64 {
+	return p.Codec
+}
+
+func (p Prefix) WithCodec(c uint64) Format {
+	if c == p.Codec {
+		return p
+	}
+	p.Codec = c
+	if c != DagProtobuf {
+		p.Version = 1
+	}
+	return p
+}
+
 func (p FormatV0) Sum(data []byte) (*Cid, error) {
 	hash, err := mh.Sum(data, mh.SHA2_256, -1)
 	if err != nil {
 		return nil, err
 	}
 	return NewCidV0(hash), nil
+}
+
+func (p FormatV0) GetCodec() uint64 {
+	return DagProtobuf
+}
+
+func (p FormatV0) WithCodec(c uint64) Format {
+	if c == DagProtobuf {
+		return p
+	}
+	return FormatV1{Codec: c, HashFun: mh.SHA2_256}
 }
 
 func (p FormatV1) Sum(data []byte) (*Cid, error) {
@@ -52,4 +80,13 @@ func (p FormatV1) Sum(data []byte) (*Cid, error) {
 		return nil, err
 	}
 	return NewCidV1(p.Codec, hash), nil
+}
+
+func (p FormatV1) GetCodec() uint64 {
+	return p.Codec
+}
+
+func (p FormatV1) WithCodec(c uint64) Format {
+	p.Codec = c
+	return p
 }
