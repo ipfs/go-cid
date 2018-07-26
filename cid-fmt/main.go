@@ -228,13 +228,11 @@ func fmtCid(fmtStr string, base mb.Encoding, cid *c.Cid) (string, error) {
 }
 
 func baseToString(base mb.Encoding) string {
-	// FIXME: Use lookup tables when they are added to go-multibase
-	switch base {
-	case mb.Base58BTC:
-		return "base58btc"
-	default:
+	baseStr, ok := mb.EncodingToStr[base]
+	if !ok {
 		return fmt.Sprintf("base?%c", base)
 	}
+	return baseStr
 }
 
 func codecToString(num uint64) string {
