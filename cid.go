@@ -338,6 +338,18 @@ func (c *Cid) StringOfBase(base mbase.Encoding) (string, error) {
 	}
 }
 
+// Format return the string representation of a Cid
+func (c *Cid) Format(base mbase.Encoder) string {
+	switch c.version {
+	case 0:
+		return c.hash.B58String()
+	case 1:
+		return base.Encode(c.bytesV1())
+	default:
+		panic("not possible to reach this point")
+	}
+}
+
 // Hash returns the multihash contained by a Cid.
 func (c *Cid) Hash() mh.Multihash {
 	return c.hash
