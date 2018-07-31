@@ -55,11 +55,12 @@ outer:
 			if len(args) < 2 {
 				usage()
 			}
-			if len(args[1]) != 1 {
-				fmt.Fprintf(os.Stderr, "Error: Invalid multibase code: %s\n", args[1])
+			encoder, err := mb.EncoderByName(args[1])
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error: %s\n", err.Error())
 				os.Exit(2)
 			}
-			newBase = mb.Encoding(args[1][0])
+			newBase = encoder.Encoding()
 			args = args[2:]
 		case "-v":
 			if len(args) < 2 {
@@ -162,6 +163,10 @@ func fmtCid(fmtStr string, base mb.Encoding, cid *c.Cid) (string, error) {
 	p := cid.Prefix()
 	out := new(bytes.Buffer)
 	var err error
+	encoder, err := mb.NewEncoder(base)
+	if err != nil {
+		return ERR_STR, err
+	}
 	for i := 0; i < len(fmtStr); i++ {
 		if fmtStr[i] != '%' {
 			out.WriteByte(fmtStr[i])
@@ -193,7 +198,7 @@ func fmtCid(fmtStr string, base mb.Encoding, cid *c.Cid) (string, error) {
 		case 'L': // hash length
 			fmt.Fprintf(out, "%d", p.MhLength)
 		case 'm', 'M': // multihash encoded in base %b
-			out.WriteString(encode(base, cid.Hash(), fmtStr[i] == 'M'))
+			out.WriteString(encode(encoder, cid.Hash(), fmtStr[i] == 'M'))
 		case 'd', 'D': // hash digest encoded in base %b
 			dec, err := mh.Decode(cid.Hash())
 			if err != nil {
@@ -201,7 +206,7 @@ func fmtCid(fmtStr string, base mb.Encoding, cid *c.Cid) (string, error) {
 				errorMsg("%v", err)
 				continue
 			}
-			out.WriteString(encode(base, dec.Digest, fmtStr[i] == 'D'))
+			out.WriteString(encode(encoder, dec.Digest, fmtStr[i] == 'D'))
 		case 's': // cid string encoded in base %b
 			str, err := cid.StringOfBase(base)
 			if err != nil {
@@ -211,7 +216,7 @@ func fmtCid(fmtStr string, base mb.Encoding, cid *c.Cid) (string, error) {
 			}
 			out.WriteString(str)
 		case 'S': // cid string without base prefix
-			out.WriteString(encode(base, cid.Bytes(), true))
+			out.WriteString(encode(encoder, cid.Bytes(), true))
 		case 'P': // prefix
 			fmt.Fprintf(out, "cidv%d-%s-%s-%d",
 				p.Version,
@@ -251,12 +256,8 @@ func hashToString(num uint64) string {
 	return name
 }
 
-func encode(base mb.Encoding, data []byte, strip bool) string {
-	str, err := mb.Encode(base, data)
-	if err != nil {
-		errorMsg("%v", err)
-		return ERR_STR
-	}
+func encode(base mb.Encoder, data []byte, strip bool) string {
+	str := base.Encode(data)
 	if strip {
 		return str[1:]
 	}
