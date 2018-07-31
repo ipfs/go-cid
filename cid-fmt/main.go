@@ -34,7 +34,7 @@ const fmtRef = `
    %d hash digest encoded in base %b (with multibase prefix)
    %D hash digest encoded in base %b without multibase prefix
    %s cid string encoded in base %b (1)
-   %s cid string encoded in base %b without multibase prefix
+   %S cid string encoded in base %b without multibase prefix
    %P cid prefix: %v-%c-%h-%L
 
 (1) For CID version 0 the multibase must be base58btc and no prefix is
