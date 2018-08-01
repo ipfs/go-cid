@@ -114,10 +114,17 @@ outer:
 			}
 		}
 		str, err := fmtCid(fmtStr, base, cid)
-		if err != nil {
+		switch err.(type) {
+		case FormatStringError:
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-			// An error here means a bad format string, no point in continuing
 			os.Exit(2)
+		default:
+			fmt.Fprintf(os.Stdout, "!ERROR!\n")
+			errorMsg("%s: %v", cidStr, err)
+			// Don't abort on cid specific errors
+			continue
+		case nil:
+			// no error
 		}
 		fmt.Fprintf(os.Stdout, "%s\n", str)
 	}
@@ -159,13 +166,26 @@ func decode(v string) (mb.Encoding, *c.Cid, error) {
 
 const ERR_STR = "!ERROR!"
 
+type FormatStringError struct {
+	Message   string
+	Specifier string
+}
+
+func (e FormatStringError) Error() string {
+	if e.Specifier == "" {
+		return e.Message
+	} else {
+		return fmt.Sprintf("%s: %s", e.Message, e.Specifier)
+	}
+}
+
 func fmtCid(fmtStr string, base mb.Encoding, cid *c.Cid) (string, error) {
 	p := cid.Prefix()
 	out := new(bytes.Buffer)
 	var err error
 	encoder, err := mb.NewEncoder(base)
 	if err != nil {
-		return ERR_STR, err
+		return "", err
 	}
 	for i := 0; i < len(fmtStr); i++ {
 		if fmtStr[i] != '%' {
@@ -174,7 +194,7 @@ func fmtCid(fmtStr string, base mb.Encoding, cid *c.Cid) (string, error) {
 		}
 		i++
 		if i >= len(fmtStr) {
-			return "", fmt.Errorf("premature end of format string")
+			return "", FormatStringError{"premature end of format string", ""}
 		}
 		switch fmtStr[i] {
 		case '%':
@@ -202,17 +222,13 @@ func fmtCid(fmtStr string, base mb.Encoding, cid *c.Cid) (string, error) {
 		case 'd', 'D': // hash digest encoded in base %b
 			dec, err := mh.Decode(cid.Hash())
 			if err != nil {
-				out.WriteString(ERR_STR)
-				errorMsg("%v", err)
-				continue
+				return "", err
 			}
 			out.WriteString(encode(encoder, dec.Digest, fmtStr[i] == 'D'))
 		case 's': // cid string encoded in base %b
 			str, err := cid.StringOfBase(base)
 			if err != nil {
-				out.WriteString(ERR_STR)
-				errorMsg("%v", err)
-				continue
+				return "", err
 			}
 			out.WriteString(str)
 		case 'S': // cid string without base prefix
@@ -225,7 +241,7 @@ func fmtCid(fmtStr string, base mb.Encoding, cid *c.Cid) (string, error) {
 				p.MhLength,
 			)
 		default:
-			return "", fmt.Errorf("unrecognized specifier in format string: %c", fmtStr[i])
+			return "", FormatStringError{"unrecognized specifier in format string", fmtStr[i-1 : i+1]}
 		}
 
 	}
