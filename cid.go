@@ -213,25 +213,34 @@ func Parse(v interface{}) (*Cid, error) {
 // starting with "Qm" are considered CidV0 and treated directly
 // as B58-encoded multihashes.
 func Decode(v string) (*Cid, error) {
+	_, cid, err := DecodeV2(v)
+	return cid, err
+}
+
+// DecodeV2 is like Decide but also returns the Multibase encoding the
+// Cid was encoded in.  EXPERIMENTAL and interface may change at any time.
+func DecodeV2(v string) (mbase.Encoding, *Cid, error) {
 	if len(v) < 2 {
-		return nil, ErrCidTooShort
+		return 0, nil, ErrCidTooShort
 	}
 
 	if len(v) == 46 && v[:2] == "Qm" {
 		hash, err := mh.FromB58String(v)
 		if err != nil {
-			return nil, err
+			return 0, nil, err
 		}
 
-		return NewCidV0(hash), nil
+		return mbase.Base58BTC, NewCidV0(hash), nil
 	}
 
-	_, data, err := mbase.Decode(v)
+	base, data, err := mbase.Decode(v)
 	if err != nil {
-		return nil, err
+		return 0, nil, err
 	}
 
-	return Cast(data)
+	cid, err := Cast(data)
+
+	return base, cid, err
 }
 
 func uvError(read int) error {
