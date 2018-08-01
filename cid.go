@@ -338,8 +338,9 @@ func (c *Cid) StringOfBase(base mbase.Encoding) (string, error) {
 	}
 }
 
-// Format return the string representation of a Cid
-func (c *Cid) Format(base mbase.Encoder) string {
+// Encode return the string representation of a Cid in a given base
+// when applicable
+func (c *Cid) Encode(base mbase.Encoder) string {
 	switch c.version {
 	case 0:
 		return c.hash.B58String()

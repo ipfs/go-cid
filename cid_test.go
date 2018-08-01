@@ -153,11 +153,11 @@ func TestBasesMarshaling(t *testing.T) {
 
 		assertEqual(t, cid, out2)
 
-		prefix, err := mbase.NewEncoder(b)
+		encoder, err := mbase.NewEncoder(b)
 		if err != nil {
 			t.Fatal(err)
 		}
-		s2 := cid.Format(prefix)
+		s2 := cid.Encode(encoder)
 		if s != s2 {
 			t.Fatalf("'%s' != '%s'", s, s2)
 		}
