@@ -144,6 +144,15 @@ func TestBasesMarshaling(t *testing.T) {
 		}
 
 		assertEqual(t, cid, out2)
+
+		encoder, err := mbase.NewEncoder(b)
+		if err != nil {
+			t.Fatal(err)
+		}
+		s2 := cid.WithBase(encoder).String()
+		if s != s2 {
+			t.Fatalf("'%s' != '%s'", s, s2)
+		}
 	}
 }
 
@@ -172,6 +181,21 @@ func TestV0Handling(t *testing.T) {
 
 	if cid.String() != old {
 		t.Fatal("marshaling roundtrip failed")
+	}
+
+	new, err := cid.StringOfBase(mbase.Base58BTC)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if new != old {
+		t.Fatal("StringOfBase roundtrip failed")
+	}
+	encoder, err := mbase.NewEncoder(mbase.Base58BTC)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cid.WithBase(encoder).String() != old {
+		t.Fatal("Encode roundtrip failed")
 	}
 }
 
@@ -273,7 +297,7 @@ func TestPrefixRoundtrip(t *testing.T) {
 func Test16BytesVarint(t *testing.T) {
 	data := []byte("this is some test content")
 	hash, _ := mh.Sum(data, mh.SHA2_256, -1)
-	c := NewCidV1(1 <<63, hash)
+	c := NewCidV1(1<<63, hash)
 	_ = c.Bytes()
 }
 
@@ -345,7 +369,7 @@ func TestHexDecode(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if c.String() != "zb2rhhFAEMepUBbGyP1k8tGfz7BSciKXP6GHuUeUsJBaK6cqG" {
+	if c.String() != hexcid {
 		t.Fatal("hash value failed to round trip decoding from hex")
 	}
 }
@@ -363,21 +387,60 @@ func ExampleDecode() {
 }
 
 func TestFromJson(t *testing.T) {
-	cval := "zb2rhhFAEMepUBbGyP1k8tGfz7BSciKXP6GHuUeUsJBaK6cqG"
+	t.Run("cidv0", func(t *testing.T) {
+		testFromJson(t, "QmdfTbBqBPQ7VNxZEYEj14VmRuZBkqFbiwReogJgS1zR1n")
+	})
+	t.Run("cidv1", func(t *testing.T) { // must be in default base
+		testFromJson(t, "zb2rhhFAEMepUBbGyP1k8tGfz7BSciKXP6GHuUeUsJBaK6cqG")
+	})
+}
+
+func testFromJson(t *testing.T, cval string) {
 	jsoncid := []byte(`{"/":"` + cval + `"}`)
-	c := EmptyCid()
-	err := json.Unmarshal(jsoncid, c)
+
+	c0 := NewCidPtr()
+	err := json.Unmarshal(jsoncid, c0)
 	if err != nil {
 		t.Fatal(err)
 	}
-
+	c := c0.Normalize()
 	if c.String() != cval {
 		t.Fatal("json parsing failed")
+	}
+
+	var c2 CidString
+	err = json.Unmarshal(jsoncid, &c2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c2.String() != cval {
+		t.Fatal("json parsing failed (CidString)")
+	}
+
+	var c3 CidWithBase
+	err = json.Unmarshal(jsoncid, &c3)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c3.String() != cval {
+		t.Fatal("json parsing failed (CidWithBase)")
 	}
 }
 
 func TestJsonRoundTrip(t *testing.T) {
-	exp, err := Decode("zb2rhhFAEMepUBbGyP1k8tGfz7BSciKXP6GHuUeUsJBaK6cqG")
+	t.Run("cidv0", func(t *testing.T) {
+		testJsonRoundTrip(t, "QmdfTbBqBPQ7VNxZEYEj14VmRuZBkqFbiwReogJgS1zR1n")
+	})
+	t.Run("cidv1", func(t *testing.T) {
+		testJsonRoundTrip(t, "zb2rhhFAEMepUBbGyP1k8tGfz7BSciKXP6GHuUeUsJBaK6cqG")
+	})
+	t.Run("cidv1-base32", func(t *testing.T) {
+		testJsonRoundTrip(t, "bafkreie5qrjvaw64n4tjm6hbnm7fnqvcssfed4whsjqxzslbd3jwhsk3mm")
+	})
+}
+
+func testJsonRoundTrip(t *testing.T, cval string) {
+	exp, err := Decode(cval)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -386,9 +449,15 @@ func TestJsonRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	actual := EmptyCid()
+
+	actual := NewCidPtr()
 	err = json.Unmarshal(enc, actual)
+
 	if !exp.Equals(actual) {
 		t.Fatal("cids not equal for Cid")
+	}
+
+	if actual.String() != cval {
+		t.Fatal("cid String() does not return same value")
 	}
 }

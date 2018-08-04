@@ -38,16 +38,25 @@ type Cid interface {
 	Version() int
 	Type() uint64
 	String() string
+	// StringOfBase is deprecated: use WithBase(encoder).String()
 	StringOfBase(mbase.Encoding) (string, error)
 	Hash() mh.Multihash
 	Bytes() []byte
 	Equals(o Cid) bool
 	KeyString() CidString
 	Prefix() Prefix
+	WithBase(mbase.Encoder) CidWithBase
+	Base() (mbase.Encoder, bool)
 }
 
 // CidString is a representation of a Cid as a binary string
 type CidString string
+
+// CidWithBase is a representation of a Cid with a Multibase
+type CidWithBase struct {
+	CidString
+	encoder mbase.Encoder
+}
 
 // UnsupportedVersionString just holds an error message
 const UnsupportedVersionString = "<unsupported cid version>"
@@ -237,12 +246,22 @@ func Decode(v string) (Cid, error) {
 		return NewCidV0(hash), nil
 	}
 
-	_, data, err := mbase.Decode(v)
+	base, data, err := mbase.Decode(v)
 	if err != nil {
 		return nil, err
 	}
 
-	return Cast(data)
+	encoder, err := mbase.NewEncoder(base)
+	if err != nil {
+		panic(err) // should not happen
+	}
+
+	c, err := Cast(data)
+	if err != nil {
+		return nil, err
+	}
+
+	return CidWithBase{c, encoder}, nil
 }
 
 func uvError(read int) error {
@@ -319,6 +338,23 @@ func (c CidString) Type() uint64 {
 	return codec
 }
 
+func (c CidString) WithBase(b mbase.Encoder) CidWithBase {
+	return CidWithBase{c, b}
+}
+
+func (c CidString) Base() (mbase.Encoder, bool) {
+	encoder, _ := mbase.NewEncoder(mbase.Base58BTC)
+	return encoder, false
+}
+
+func (c CidWithBase) Base() (mbase.Encoder, bool) {
+	if c.Version() == 0 {
+		encoder, _ := mbase.NewEncoder(mbase.Base58BTC)
+		return encoder, false
+	}
+	return c.encoder, true
+}
+
 // String returns the default string representation of a
 // Cid. Currently, Base58 is used as the encoding for the
 // multibase string.
@@ -333,6 +369,20 @@ func (c CidString) String() string {
 		}
 
 		return mbstr
+	default:
+		panic("not possible to reach this point")
+	}
+}
+
+// String returns the default string representation of a
+// Cid. Currently, Base58 is used as the encoding for the
+// multibase string.
+func (c CidWithBase) String() string {
+	switch c.Version() {
+	case 0:
+		return c.Hash().B58String()
+	case 1:
+		return c.encoder.Encode(c.Bytes())
 	default:
 		panic("not possible to reach this point")
 	}
@@ -383,14 +433,40 @@ func (c CidString) Equals(c0 Cid) bool {
 	return c.KeyString() == c0.KeyString()
 }
 
-// Returns an empty (and invalid) Cid, used primary for UnmarshalJSON
-func EmptyCid() *CidString {
-	c := CidString("")
-	return &c
+// CidPtr represents a Cid that is a pointer and can be used with
+// UnmarshalJSON
+type CidPtr interface {
+	Cid
+	Normalize() Cid
+}
+
+// NewCidPtr returns a pointer to an empty Cid for use in
+// json.Unmarshal, it is recommended you call Normalize() after
+// json.Unmarshal to avoid unnecessary redirection
+func NewCidPtr() CidPtr {
+	return &CidWithBase{}
+}
+
+func (c *CidWithBase) Normalize() Cid {
+	if c.Version() == 0 {
+		return c.KeyString()
+	}
+	return *c
 }
 
 // UnmarshalJSON parses the JSON representation of a Cid.
 func (c *CidString) UnmarshalJSON(b []byte) error {
+	c2 := &CidWithBase{}
+	err := c2.UnmarshalJSON(b)
+	if err != nil {
+		return err
+	}
+	*c = c2.CidString
+	return nil
+}
+
+// UnmarshalJSON parses the JSON representation of a Cid.
+func (c *CidWithBase) UnmarshalJSON(b []byte) error {
 	if len(b) < 2 {
 		return fmt.Errorf("invalid cid json blob")
 	}
@@ -411,7 +487,8 @@ func (c *CidString) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
-	*c = out.KeyString()
+	c.CidString = out.KeyString()
+	c.encoder, _ = out.Base()
 
 	return nil
 }
@@ -423,6 +500,10 @@ func (c *CidString) UnmarshalJSON(b []byte) error {
 // Note that this formatting comes from the IPLD specification
 // (https://github.com/ipld/specs/tree/master/ipld)
 func (c CidString) MarshalJSON() ([]byte, error) {
+	return []byte(fmt.Sprintf("{\"/\":\"%s\"}", c.String())), nil
+}
+
+func (c CidWithBase) MarshalJSON() ([]byte, error) {
 	return []byte(fmt.Sprintf("{\"/\":\"%s\"}", c.String())), nil
 }
 
