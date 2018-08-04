@@ -37,16 +37,16 @@ var tCodecs = map[uint64]string{
 	DecredTx:           "decred-tx",
 }
 
-func assertEqual(t *testing.T, a, b *cid_) {
-	if a.codec != b.codec {
+func assertEqual(t *testing.T, a, b Cid) {
+	if a.Type() != b.Type() {
 		t.Fatal("mismatch on type")
 	}
 
-	if a.version != b.version {
+	if a.Version() != b.Version() {
 		t.Fatal("mismatch on version")
 	}
 
-	if !bytes.Equal(a.hash, b.hash) {
+	if !bytes.Equal(a.Hash(), b.Hash()) {
 		t.Fatal("multihash mismatch")
 	}
 }
@@ -77,11 +77,7 @@ func TestBasicMarshaling(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cid := &cid_{
-		codec:   7,
-		version: 1,
-		hash:    h,
-	}
+	cid := NewCidV1(7, h)
 
 	data := cid.Bytes()
 
@@ -107,11 +103,7 @@ func TestBasesMarshaling(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cid := &cid_{
-		codec:   7,
-		version: 1,
-		hash:    h,
-	}
+	cid := NewCidV1(7, h)
 
 	data := cid.Bytes()
 
@@ -170,11 +162,11 @@ func TestV0Handling(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if cid.version != 0 {
+	if cid.Version() != 0 {
 		t.Fatal("should have gotten version 0 cid")
 	}
 
-	if cid.hash.B58String() != old {
+	if cid.Hash().B58String() != old {
 		t.Fatal("marshaling roundtrip failed")
 	}
 
@@ -281,9 +273,7 @@ func TestPrefixRoundtrip(t *testing.T) {
 func Test16BytesVarint(t *testing.T) {
 	data := []byte("this is some test content")
 	hash, _ := mh.Sum(data, mh.SHA2_256, -1)
-	c := NewCidV1(DagCBOR, hash)
-
-	c.codec = 1 << 63
+	c := NewCidV1(1 <<63, hash)
 	_ = c.Bytes()
 }
 
@@ -326,8 +316,8 @@ func TestParse(t *testing.T) {
 		if err != nil {
 			return err
 		}
-		if cid.version != 0 {
-			return fmt.Errorf("expected version 0, got %s", string(cid.version))
+		if cid.Version() != 0 {
+			return fmt.Errorf("expected version 0, got %s", string(cid.Version()))
 		}
 		actual := cid.Hash().B58String()
 		if actual != expected {
@@ -376,7 +366,7 @@ func TestFromJson(t *testing.T) {
 	cval := "zb2rhhFAEMepUBbGyP1k8tGfz7BSciKXP6GHuUeUsJBaK6cqG"
 	jsoncid := []byte(`{"/":"` + cval + `"}`)
 	c := EmptyCid()
-	err := json.Unmarshal(jsoncid, &c)
+	err := json.Unmarshal(jsoncid, c)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -31,16 +31,23 @@ import (
 	mh "github.com/multiformats/go-multihash"
 )
 
+// Cid represents a self-describing content adressed
+// identifier. It is formed by a Version, a Codec (which indicates
+// a multicodec-packed content type) and a Multihash.
 type Cid interface {
+	Version() int
 	Type() uint64
 	String() string
 	StringOfBase(mbase.Encoding) (string, error)
 	Hash() mh.Multihash
 	Bytes() []byte
 	Equals(o Cid) bool
-	KeyString() string
+	KeyString() CidString
 	Prefix() Prefix
 }
+
+// CidString is a representation of a Cid as a binary string
+type CidString string
 
 // UnsupportedVersionString just holds an error message
 const UnsupportedVersionString = "<unsupported cid version>"
@@ -143,22 +150,24 @@ var CodecToStr = map[uint64]string{
 // They exist to allow IPFS to work with Cids while keeping
 // compatibility with the plain-multihash format used used in IPFS.
 // NewCidV1 should be used preferentially.
-func NewCidV0(mhash mh.Multihash) *cid_ {
-	return &cid_{
-		version: 0,
-		codec:   DagProtobuf,
-		hash:    mhash,
-	}
+func NewCidV0(mhash mh.Multihash) CidString {
+	return CidString(mhash)
 }
 
 // NewCidV1 returns a new Cid using the given multicodec-packed
 // content type.
-func NewCidV1(codecType uint64, mhash mh.Multihash) *cid_ {
-	return &cid_{
-		version: 1,
-		codec:   codecType,
-		hash:    mhash,
+func NewCidV1(codecType uint64, mhash mh.Multihash) CidString {
+	hashlen := len(mhash)
+	// two 8 bytes (max) numbers plus hash
+	buf := make([]byte, 2*binary.MaxVarintLen64+hashlen)
+	n := binary.PutUvarint(buf, 1)
+	n += binary.PutUvarint(buf[n:], codecType)
+	cn := copy(buf[n:], mhash)
+	if cn != hashlen {
+		panic("copy hash length is inconsistent")
 	}
+
+	return CidString(buf[:n+hashlen])
 }
 
 // NewPrefixV0 returns a CIDv0 prefix with the specified multihash type.
@@ -182,18 +191,9 @@ func NewPrefixV1(codecType uint64, mhType uint64) Prefix {
 	}
 }
 
-// Cid represents a self-describing content adressed
-// identifier. It is formed by a Version, a Codec (which indicates
-// a multicodec-packed content type) and a Multihash.
-type cid_ struct {
-	version uint64
-	codec   uint64
-	hash    mh.Multihash
-}
-
 // Parse is a short-hand function to perform Decode, Cast etc... on
 // a generic interface{} type.
-func Parse(v interface{}) (*cid_, error) {
+func Parse(v interface{}) (Cid, error) {
 	switch v2 := v.(type) {
 	case string:
 		if strings.Contains(v2, "/ipfs/") {
@@ -204,7 +204,7 @@ func Parse(v interface{}) (*cid_, error) {
 		return Cast(v2)
 	case mh.Multihash:
 		return NewCidV0(v2), nil
-	case *cid_:
+	case CidString:
 		return v2, nil
 	default:
 		return nil, fmt.Errorf("can't parse %+v as Cid", v2)
@@ -223,7 +223,7 @@ func Parse(v interface{}) (*cid_, error) {
 // Decode will also detect and parse CidV0 strings. Strings
 // starting with "Qm" are considered CidV0 and treated directly
 // as B58-encoded multihashes.
-func Decode(v string) (*cid_, error) {
+func Decode(v string) (Cid, error) {
 	if len(v) < 2 {
 		return nil, ErrCidTooShort
 	}
@@ -267,61 +267,67 @@ func uvError(read int) error {
 //
 // Please use decode when parsing a regular Cid string, as Cast does not
 // expect multibase-encoded data. Cast accepts the output of Cid.Bytes().
-func Cast(data []byte) (*cid_, error) {
+func Cast(data []byte) (CidString, error) {
 	if len(data) == 34 && data[0] == 18 && data[1] == 32 {
 		h, err := mh.Cast(data)
 		if err != nil {
-			return nil, err
+			return "", err
 		}
 
-		return &cid_{
-			codec:   DagProtobuf,
-			version: 0,
-			hash:    h,
-		}, nil
+		return NewCidV0(h), nil
 	}
 
 	vers, n := binary.Uvarint(data)
 	if err := uvError(n); err != nil {
-		return nil, err
+		return "", err
 	}
 
 	if vers != 0 && vers != 1 {
-		return nil, fmt.Errorf("invalid cid version number: %d", vers)
+		return "", fmt.Errorf("invalid cid version number: %d", vers)
 	}
 
-	codec, cn := binary.Uvarint(data[n:])
+	_, cn := binary.Uvarint(data[n:])
 	if err := uvError(cn); err != nil {
-		return nil, err
+		return "", err
 	}
 
 	rest := data[n+cn:]
 	h, err := mh.Cast(rest)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
-	return &cid_{
-		version: vers,
-		codec:   codec,
-		hash:    h,
-	}, nil
+	return CidString(data[0 : n+cn+len(h)]), nil
+}
+
+// Version returns the Cid version
+func (c CidString) Version() int {
+	if len(c) == 34 && c[0] == 18 && c[1] == 32 {
+		return 0
+	}
+	return 1
 }
 
 // Type returns the multicodec-packed content type of a Cid.
-func (c *cid_) Type() uint64 {
-	return c.codec
+func (c CidString) Type() uint64 {
+	if c.Version() == 0 {
+		return DagProtobuf
+	}
+	bytes := []byte(c)
+	_, n := binary.Uvarint(bytes)
+	codec, _ := binary.Uvarint(bytes[n:])
+	return codec
 }
 
 // String returns the default string representation of a
 // Cid. Currently, Base58 is used as the encoding for the
 // multibase string.
-func (c *cid_) String() string {
-	switch c.version {
+func (c CidString) String() string {
+	switch c.Version() {
 	case 0:
-		return c.hash.B58String()
+		return c.Hash().B58String()
 	case 1:
-		mbstr, err := mbase.Encode(mbase.Base58BTC, c.bytesV1())
+		mbstr, err := mbase.Encode(mbase.Base58BTC, c.Bytes())
 		if err != nil {
 			panic("should not error with hardcoded mbase: " + err.Error())
 		}
@@ -334,72 +340,57 @@ func (c *cid_) String() string {
 
 // String returns the string representation of a Cid
 // encoded is selected base
-func (c *cid_) StringOfBase(base mbase.Encoding) (string, error) {
-	switch c.version {
+func (c CidString) StringOfBase(base mbase.Encoding) (string, error) {
+	switch c.Version() {
 	case 0:
 		if base != mbase.Base58BTC {
 			return "", ErrInvalidEncoding
 		}
-		return c.hash.B58String(), nil
+		return c.Hash().B58String(), nil
 	case 1:
-		return mbase.Encode(base, c.bytesV1())
+		return mbase.Encode(base, c.Bytes())
 	default:
 		panic("not possible to reach this point")
 	}
 }
 
 // Hash returns the multihash contained by a Cid.
-func (c *cid_) Hash() mh.Multihash {
-	return c.hash
+func (c CidString) Hash() mh.Multihash {
+	if c.Version() == 0 {
+		return mh.Multihash([]byte(c))
+	}
+
+	bytes := []byte(c)
+	// skip version length
+	_, n1 := binary.Uvarint(bytes)
+	// skip codec length
+	_, n2 := binary.Uvarint(bytes[n1:])
+
+	return mh.Multihash(bytes[n1+n2:])
 }
 
 // Bytes returns the byte representation of a Cid.
 // The output of bytes can be parsed back into a Cid
 // with Cast().
-func (c *cid_) Bytes() []byte {
-	switch c.version {
-	case 0:
-		return c.bytesV0()
-	case 1:
-		return c.bytesV1()
-	default:
-		panic("not possible to reach this point")
-	}
-}
-
-func (c *cid_) bytesV0() []byte {
-	return []byte(c.hash)
-}
-
-func (c *cid_) bytesV1() []byte {
-	// two 8 bytes (max) numbers plus hash
-	buf := make([]byte, 2*binary.MaxVarintLen64+len(c.hash))
-	n := binary.PutUvarint(buf, c.version)
-	n += binary.PutUvarint(buf[n:], c.codec)
-	cn := copy(buf[n:], c.hash)
-	if cn != len(c.hash) {
-		panic("copy hash length is inconsistent")
-	}
-
-	return buf[:n+len(c.hash)]
+func (c CidString) Bytes() []byte {
+	return []byte(c)
 }
 
 // Equals checks that two Cids are the same.
 // In order for two Cids to be considered equal, the
 // Version, the Codec and the Multihash must match.
-func (c *cid_) Equals(o0 Cid) bool {
-	o := o0.(*cid_)
-	return c.codec == o.codec &&
-		c.version == o.version &&
-		bytes.Equal(c.hash, o.hash)
+func (c CidString) Equals(c0 Cid) bool {
+	return c.KeyString() == c0.KeyString()
 }
 
-func EmptyCid() Cid {
-	return &cid_{}
+// Returns an empty (and invalid) Cid, used primary for UnmarshalJSON
+func EmptyCid() *CidString {
+	c := CidString("")
+	return &c
 }
 
 // UnmarshalJSON parses the JSON representation of a Cid.
-func (c *cid_) UnmarshalJSON(b []byte) error {
+func (c *CidString) UnmarshalJSON(b []byte) error {
 	if len(b) < 2 {
 		return fmt.Errorf("invalid cid json blob")
 	}
@@ -420,9 +411,8 @@ func (c *cid_) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
-	c.version = out.version
-	c.hash = out.hash
-	c.codec = out.codec
+	*c = out.KeyString()
+
 	return nil
 }
 
@@ -432,31 +422,31 @@ func (c *cid_) UnmarshalJSON(b []byte) error {
 //
 // Note that this formatting comes from the IPLD specification
 // (https://github.com/ipld/specs/tree/master/ipld)
-func (c *cid_) MarshalJSON() ([]byte, error) {
+func (c CidString) MarshalJSON() ([]byte, error) {
 	return []byte(fmt.Sprintf("{\"/\":\"%s\"}", c.String())), nil
 }
 
 // KeyString casts the result of cid.Bytes() as a string, and returns it.
-func (c *cid_) KeyString() string {
-	return string(c.Bytes())
+func (c CidString) KeyString() CidString {
+	return c
 }
 
 // Loggable returns a Loggable (as defined by
 // https://godoc.org/github.com/ipfs/go-log).
-func (c *cid_) Loggable() map[string]interface{} {
+func (c CidString) Loggable() map[string]interface{} {
 	return map[string]interface{}{
 		"cid": c,
 	}
 }
 
 // Prefix builds and returns a Prefix out of a Cid.
-func (c *cid_) Prefix() Prefix {
-	dec, _ := mh.Decode(c.hash) // assuming we got a valid multiaddr, this will not error
+func (c CidString) Prefix() Prefix {
+	dec, _ := mh.Decode(c.Hash()) // assuming we got a valid multiaddr, this will not error
 	return Prefix{
 		MhType:   dec.Code,
 		MhLength: dec.Length,
-		Version:  c.version,
-		Codec:    c.codec,
+		Version:  uint64(c.Version()),
+		Codec:    c.Type(),
 	}
 }
 
@@ -473,7 +463,7 @@ type Prefix struct {
 
 // Sum uses the information in a prefix to perform a multihash.Sum()
 // and return a newly constructed Cid with the resulting multihash.
-func (p Prefix) Sum(data []byte) (*cid_, error) {
+func (p Prefix) Sum(data []byte) (Cid, error) {
 	hash, err := mh.Sum(data, p.MhType, p.MhLength)
 	if err != nil {
 		return nil, err
