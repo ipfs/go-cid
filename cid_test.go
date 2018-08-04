@@ -37,7 +37,7 @@ var tCodecs = map[uint64]string{
 	DecredTx:           "decred-tx",
 }
 
-func assertEqual(t *testing.T, a, b *Cid) {
+func assertEqual(t *testing.T, a, b *cid_) {
 	if a.codec != b.codec {
 		t.Fatal("mismatch on type")
 	}
@@ -77,7 +77,7 @@ func TestBasicMarshaling(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cid := &Cid{
+	cid := &cid_{
 		codec:   7,
 		version: 1,
 		hash:    h,
@@ -107,7 +107,7 @@ func TestBasesMarshaling(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cid := &Cid{
+	cid := &cid_{
 		codec:   7,
 		version: 1,
 		hash:    h,
@@ -375,7 +375,7 @@ func ExampleDecode() {
 func TestFromJson(t *testing.T) {
 	cval := "zb2rhhFAEMepUBbGyP1k8tGfz7BSciKXP6GHuUeUsJBaK6cqG"
 	jsoncid := []byte(`{"/":"` + cval + `"}`)
-	var c Cid
+	c := EmptyCid()
 	err := json.Unmarshal(jsoncid, &c)
 	if err != nil {
 		t.Fatal(err)
@@ -392,25 +392,13 @@ func TestJsonRoundTrip(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Verify it works for a *Cid.
 	enc, err := json.Marshal(exp)
 	if err != nil {
 		t.Fatal(err)
 	}
-	var actual Cid
-	err = json.Unmarshal(enc, &actual)
-	if !exp.Equals(&actual) {
-		t.Fatal("cids not equal for *Cid")
-	}
-
-	// Verify it works for a Cid.
-	enc, err = json.Marshal(*exp)
-	if err != nil {
-		t.Fatal(err)
-	}
-	var actual2 Cid
-	err = json.Unmarshal(enc, &actual2)
-	if !exp.Equals(&actual2) {
+	actual := EmptyCid()
+	err = json.Unmarshal(enc, actual)
+	if !exp.Equals(actual) {
 		t.Fatal("cids not equal for Cid")
 	}
 }
