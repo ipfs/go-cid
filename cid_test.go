@@ -195,7 +195,7 @@ func TestNewPrefixV1(t *testing.T) {
 	data := []byte("this is some test content")
 
 	// Construct c1
-	prefix := NewPrefixV1(DagCBOR, mh.SHA2_256)
+	prefix := NewPrefixV1(DagCBOR, mh.SHA2_256, -1)
 	c1, err := prefix.Sum(data)
 	if err != nil {
 		t.Fatal(err)
@@ -224,7 +224,7 @@ func TestNewPrefixV0(t *testing.T) {
 	data := []byte("this is some test content")
 
 	// Construct c1
-	prefix := NewPrefixV0(mh.SHA2_256)
+	prefix := NewPrefixV0()
 	c1, err := prefix.Sum(data)
 	if err != nil {
 		t.Fatal(err)

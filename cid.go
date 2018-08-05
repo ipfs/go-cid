@@ -151,10 +151,10 @@ func NewCidV1(codecType uint64, mhash mh.Multihash) *Cid {
 }
 
 // NewPrefixV0 returns a CIDv0 prefix with the specified multihash type.
-func NewPrefixV0(mhType uint64) Prefix {
+func NewPrefixV0() Prefix {
 	return Prefix{
-		MhType:   mhType,
-		MhLength: mh.DefaultLengths[mhType],
+		MhType:   mh.SHA2_256,
+		MhLength: mh.DefaultLengths[mh.SHA2_256],
 		Version:  0,
 		Codec:    DagProtobuf,
 	}
@@ -162,10 +162,13 @@ func NewPrefixV0(mhType uint64) Prefix {
 
 // NewPrefixV1 returns a CIDv1 prefix with the specified codec and multihash
 // type.
-func NewPrefixV1(codecType uint64, mhType uint64) Prefix {
+func NewPrefixV1(codecType uint64, mhType uint64, mhLen int) Prefix {
+	if mhLen == -1 {
+		mhLen = mh.DefaultLengths[mhType]
+	}
 	return Prefix{
 		MhType:   mhType,
-		MhLength: mh.DefaultLengths[mhType],
+		MhLength: mhLen,
 		Version:  1,
 		Codec:    codecType,
 	}
