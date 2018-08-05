@@ -45,7 +45,10 @@ type Cid interface {
 	Equals(o Cid) bool
 	KeyString() CidString
 	Prefix() Prefix
+	// WithBase associates a multibase with the Cid
 	WithBase(mbase.Encoder) CidWithBase
+	// Base() returns the multibase associated with the Cid and true
+	// if is defined, otherwise it returns DefaultBase and false
 	Base() (mbase.Encoder, bool)
 }
 
@@ -55,11 +58,13 @@ type CidString string
 // CidWithBase is a representation of a Cid with a Multibase
 type CidWithBase struct {
 	CidString
-	encoder mbase.Encoder
+	base mbase.Encoding // -1 if not defined
 }
 
 // UnsupportedVersionString just holds an error message
 const UnsupportedVersionString = "<unsupported cid version>"
+
+const DefaultBase = mbase.Base58BTC
 
 var (
 	// ErrVarintBuffSmall means that a buffer passed to the cid parser was not
@@ -232,36 +237,31 @@ func Parse(v interface{}) (Cid, error) {
 // Decode will also detect and parse CidV0 strings. Strings
 // starting with "Qm" are considered CidV0 and treated directly
 // as B58-encoded multihashes.
-func Decode(v string) (Cid, error) {
+func Decode(v string) (CidWithBase, error) {
 	if len(v) < 2 {
-		return nil, ErrCidTooShort
+		return CidWithBase{}, ErrCidTooShort
 	}
 
 	if len(v) == 46 && v[:2] == "Qm" {
 		hash, err := mh.FromB58String(v)
 		if err != nil {
-			return nil, err
+			return CidWithBase{}, err
 		}
 
-		return NewCidV0(hash), nil
+		return CidWithBase{NewCidV0(hash), mbase.Encoding(-1)}, nil
 	}
 
 	base, data, err := mbase.Decode(v)
 	if err != nil {
-		return nil, err
-	}
-
-	encoder, err := mbase.NewEncoder(base)
-	if err != nil {
-		panic(err) // should not happen
+		return CidWithBase{}, err
 	}
 
 	c, err := Cast(data)
 	if err != nil {
-		return nil, err
+		return CidWithBase{}, err
 	}
 
-	return CidWithBase{c, encoder}, nil
+	return CidWithBase{c, base}, nil
 }
 
 func uvError(read int) error {
@@ -339,20 +339,23 @@ func (c CidString) Type() uint64 {
 }
 
 func (c CidString) WithBase(b mbase.Encoder) CidWithBase {
-	return CidWithBase{c, b}
+	return CidWithBase{c, b.Encoding()}
 }
 
 func (c CidString) Base() (mbase.Encoder, bool) {
-	encoder, _ := mbase.NewEncoder(mbase.Base58BTC)
+	encoder, _ := mbase.NewEncoder(DefaultBase)
 	return encoder, false
 }
 
 func (c CidWithBase) Base() (mbase.Encoder, bool) {
-	if c.Version() == 0 {
-		encoder, _ := mbase.NewEncoder(mbase.Base58BTC)
-		return encoder, false
+	if c.base == -1 {
+		return c.CidString.Base()
 	}
-	return c.encoder, true
+	encoder, err := mbase.NewEncoder(c.base)
+	if err != nil {
+		panic(err) // should not happen
+	}
+	return encoder, true
 }
 
 // String returns the default string representation of a
@@ -363,29 +366,26 @@ func (c CidString) String() string {
 	case 0:
 		return c.Hash().B58String()
 	case 1:
-		mbstr, err := mbase.Encode(mbase.Base58BTC, c.Bytes())
+		mbstr, err := mbase.Encode(DefaultBase, c.Bytes())
 		if err != nil {
-			panic("should not error with hardcoded mbase: " + err.Error())
+			panic("should not error with default mbase: " + err.Error())
 		}
-
 		return mbstr
 	default:
 		panic("not possible to reach this point")
 	}
 }
 
-// String returns the default string representation of a
-// Cid. Currently, Base58 is used as the encoding for the
-// multibase string.
+// String returns the string representation of a Cid.
 func (c CidWithBase) String() string {
-	switch c.Version() {
-	case 0:
-		return c.Hash().B58String()
-	case 1:
-		return c.encoder.Encode(c.Bytes())
-	default:
-		panic("not possible to reach this point")
+	if c.base == -1 || c.Version() == 0 {
+		return c.CidString.String()
 	}
+	mbstr, err := mbase.Encode(c.base, c.Bytes())
+	if err != nil {
+		panic(err) // should not happen
+	}
+	return mbstr
 }
 
 // String returns the string representation of a Cid
@@ -448,8 +448,8 @@ func NewCidPtr() CidPtr {
 }
 
 func (c *CidWithBase) Normalize() Cid {
-	if c.Version() == 0 {
-		return c.KeyString()
+	if c.base == -1 {
+		return c.CidString
 	}
 	return *c
 }
@@ -487,8 +487,8 @@ func (c *CidWithBase) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
-	c.CidString = out.KeyString()
-	c.encoder, _ = out.Base()
+	c.CidString = out.CidString
+	c.base = out.base
 
 	return nil
 }
