@@ -37,7 +37,7 @@ var tCodecs = map[uint64]string{
 	DecredTx:           "decred-tx",
 }
 
-func assertEqual(t *testing.T, a, b Cid) {
+func assertEqual(t *testing.T, a, b *Cid) {
 	if a.Type() != b.Type() {
 		t.Fatal("mismatch on type")
 	}
@@ -398,12 +398,11 @@ func TestFromJson(t *testing.T) {
 func testFromJson(t *testing.T, cval string) {
 	jsoncid := []byte(`{"/":"` + cval + `"}`)
 
-	c0 := NewCidPtr()
-	err := json.Unmarshal(jsoncid, c0)
+	c := &Cid{}
+	err := json.Unmarshal(jsoncid, c)
 	if err != nil {
 		t.Fatal(err)
 	}
-	c := c0.Normalize()
 	if c.String() != cval {
 		t.Fatal("json parsing failed")
 	}
@@ -417,7 +416,7 @@ func testFromJson(t *testing.T, cval string) {
 		t.Fatal("json parsing failed (CidString)")
 	}
 
-	var c3 CidWithBase
+	var c3 Cid
 	err = json.Unmarshal(jsoncid, &c3)
 	if err != nil {
 		t.Fatal(err)
@@ -450,7 +449,7 @@ func testJsonRoundTrip(t *testing.T, cval string) {
 		t.Fatal(err)
 	}
 
-	actual := NewCidPtr()
+	actual := &Cid{}
 	err = json.Unmarshal(enc, actual)
 
 	if !exp.Equals(actual) {

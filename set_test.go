@@ -7,7 +7,7 @@ import (
 	mh "github.com/multiformats/go-multihash"
 )
 
-func makeCid(i int) Cid {
+func makeCid(i int) *Cid {
 	data := []byte(fmt.Sprintf("this is some test content %d", i))
 	hash, _ := mh.Sum(data, mh.SHA2_256, -1)
 	return NewCidV1(Raw, hash)
@@ -35,7 +35,7 @@ func TestSetRemove(t *testing.T) {
 func BenchmarkSetVisit(b *testing.B) {
 	s := NewSet()
 
-	cids := make([]Cid, b.N)
+	cids := make([]*Cid, b.N)
 	for i := 0; i < b.N; i++ {
 		cids[i] = makeCid(i)
 	}
@@ -49,42 +49,6 @@ func BenchmarkSetVisit(b *testing.B) {
 		s.Visit(cids[i])
 	}
 	if s.Len() != b.N {
-		b.FailNow()
-	}
-}
-
-func BenchmarkStringV1(b *testing.B) {
-	data := []byte("this is some test content")
-	hash, _ := mh.Sum(data, mh.SHA2_256, -1)
-	cid := NewCidV1(Raw, hash)
-
-	b.ReportAllocs()
-	b.ResetTimer()
-
-	count := 0
-	for i := 0; i < b.N; i++ {
-		count += len(cid.String())
-	}
-	if count != 49*b.N {
-		b.FailNow()
-	}
-}
-
-// making sure we don't allocate when returning bytes
-func BenchmarkBytesV1(b *testing.B) {
-	data := []byte("this is some test content")
-	hash, _ := mh.Sum(data, mh.SHA2_256, -1)
-	cid := NewCidV1(Raw, hash)
-
-	b.ReportAllocs()
-	b.ResetTimer()
-
-	count := 0
-	for i := 0; i < b.N; i++ {
-		count += len(cid.Bytes())
-		count += len([]byte(cid))
-	}
-	if count != 36*2*b.N {
 		b.FailNow()
 	}
 }
