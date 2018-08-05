@@ -72,7 +72,7 @@ func TestTableForV0(t *testing.T) {
 }
 
 func TestBasicMarshaling(t *testing.T) {
-	h, err := mh.Sum([]byte("TEST"), mh.SHA3, 4)
+	h, err := mh.Sum([]byte("TEST"), mh.SHA3, 20)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -102,7 +102,7 @@ func TestBasicMarshaling(t *testing.T) {
 }
 
 func TestBasesMarshaling(t *testing.T) {
-	h, err := mh.Sum([]byte("TEST"), mh.SHA3, 4)
+	h, err := mh.Sum([]byte("TEST"), mh.SHA3, 20)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -139,7 +139,7 @@ func TestBasesMarshaling(t *testing.T) {
 	for _, b := range testBases {
 		s, err := cid.StringOfBase(b)
 		if err != nil {
-			t.Fatal(err)
+			t.Fatal(err, b)
 		}
 
 		if s[0] != byte(b) {
@@ -195,7 +195,7 @@ func TestNewPrefixV1(t *testing.T) {
 	data := []byte("this is some test content")
 
 	// Construct c1
-	prefix := NewPrefixV1(DagCBOR, mh.SHA2_256)
+	prefix := NewPrefixV1(DagCBOR, mh.SHA2_256, -1)
 	c1, err := prefix.Sum(data)
 	if err != nil {
 		t.Fatal(err)
@@ -210,7 +210,10 @@ func TestNewPrefixV1(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	c2 := NewCidV1(DagCBOR, hash)
+	c2, err := NewCidV1(DagCBOR, hash)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	if !c1.Equals(c2) {
 		t.Fatal("cids mismatch")
@@ -224,7 +227,7 @@ func TestNewPrefixV0(t *testing.T) {
 	data := []byte("this is some test content")
 
 	// Construct c1
-	prefix := NewPrefixV0(mh.SHA2_256)
+	prefix := NewPrefixV0()
 	c1, err := prefix.Sum(data)
 	if err != nil {
 		t.Fatal(err)
@@ -239,7 +242,10 @@ func TestNewPrefixV0(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	c2 := NewCidV0(hash)
+	c2, err := NewCidV0(hash)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	if !c1.Equals(c2) {
 		t.Fatal("cids mismatch")
@@ -252,7 +258,10 @@ func TestNewPrefixV0(t *testing.T) {
 func TestPrefixRoundtrip(t *testing.T) {
 	data := []byte("this is some test content")
 	hash, _ := mh.Sum(data, mh.SHA2_256, -1)
-	c := NewCidV1(DagCBOR, hash)
+	c, err := NewCidV1(DagCBOR, hash)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	pref := c.Prefix()
 
@@ -281,7 +290,10 @@ func TestPrefixRoundtrip(t *testing.T) {
 func Test16BytesVarint(t *testing.T) {
 	data := []byte("this is some test content")
 	hash, _ := mh.Sum(data, mh.SHA2_256, -1)
-	c := NewCidV1(DagCBOR, hash)
+	c, err := NewCidV1(DagCBOR, hash)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	c.codec = 1 << 63
 	_ = c.Bytes()
@@ -311,9 +323,13 @@ func TestParse(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	c, err := NewCidV0(h)
+	if err != nil {
+		t.Fatal(err)
+	}
 	assertions := [][]interface{}{
-		[]interface{}{NewCidV0(h), theHash},
-		[]interface{}{NewCidV0(h).Bytes(), theHash},
+		[]interface{}{c, theHash},
+		[]interface{}{c.Bytes(), theHash},
 		[]interface{}{h, theHash},
 		[]interface{}{theHash, theHash},
 		[]interface{}{"/ipfs/" + theHash, theHash},
