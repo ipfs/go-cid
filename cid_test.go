@@ -208,7 +208,7 @@ func testHandling(t *testing.T, v uint64, cidStr, cidStr2 string) {
 		t.Fatal("base wrong")
 	}
 
-	*cid = cid.ResetBase()
+	cid = cid.ResetBase()
 	if cid.String() != cidStr2 {
 		t.Fatal("marshaling roundtrip failed after ResetBase()")
 	}

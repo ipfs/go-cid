@@ -331,18 +331,18 @@ func (c *Cid) Base() (mbase.Encoder, bool) {
 // WithBase changes the Multibase that associated with the Cid.  If
 // the Cid is version 0 then the multibase is ignored when conversting
 // to a string, but the value is still associated with the Cid.  This
-// is useful when, for example, converting a CidV0 to CidV1.  Note,
-// for efficiency this method has a non-pointer receiver and return a
-// value.
-func (c Cid) WithBase(b mbase.Encoder) Cid {
-	c.base = b.Encoding()
-	return c
+// is useful when, for example, converting a CidV0 to CidV1.
+func (c *Cid) WithBase(b mbase.Encoder) *Cid {
+	c2 := *c
+	c2.base = b.Encoding()
+	return &c2
 }
 
 // ResetBase resets the base to the default value
-func (c Cid) ResetBase() Cid {
-	c.base = -1
-	return c
+func (c *Cid) ResetBase() *Cid {
+	c2 := *c
+	c2.base = -1
+	return &c2
 }
 
 // String returns the string representation of a Cid.
