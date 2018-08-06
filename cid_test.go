@@ -163,23 +163,54 @@ func TestEmptyString(t *testing.T) {
 }
 
 func TestV0Handling(t *testing.T) {
+	origDef := DefaultBase
 	old := "QmdfTbBqBPQ7VNxZEYEj14VmRuZBkqFbiwReogJgS1zR1n"
+	DefaultBase = mbase.Base58BTC
+	t.Run("DefaultBase=base58btc", func (t *testing.T) {testHandling(t, 0, old, old)})
+	DefaultBase = mbase.Base32
+	t.Run("DefaultBase=base32", func (t *testing.T) {testHandling(t, 0, old, old)})
+	DefaultBase = origDef
+}
 
-	cid, err := Decode(old)
+func TestV1Handling(t *testing.T) {
+	origDef := DefaultBase
+	new := "zdj7Wkkhxcu2rsiN6GUyHCLsSLL47kdUNfjbFqBUUhMFTZKBi"
+	base32 := "bafybeihdwdcefgh4dqkjv67uzcmw7ojee6xedzdetojuzjevtenxquvyku"
+	DefaultBase = mbase.Base58BTC
+	t.Run("DefaultBase=base58btc", func (t *testing.T) {testHandling(t, 1, new, new)})
+	DefaultBase = mbase.Base32
+	t.Run("DefaultBase=base32", func (t *testing.T) {testHandling(t, 1, new, base32)})
+	DefaultBase = origDef
+}
+
+func testHandling(t *testing.T, v uint64, cidStr, cidStr2 string) {
+	cid, err := Decode(cidStr)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if cid.version != 0 {
-		t.Fatal("should have gotten version 0 cid")
+	if cid.version != v {
+		t.Fatalf("should have gotten version %d cid", v)
 	}
 
-	if cid.hash.B58String() != old {
-		t.Fatal("marshaling roundtrip failed")
+	if v == 0 {
+		if cid.hash.B58String() != cidStr {
+			t.Fatal("marshaling roundtrip failed: B58String()")
+		}
 	}
 
-	if cid.String() != old {
-		t.Fatal("marshaling roundtrip failed")
+	if cid.String() != cidStr {
+		t.Fatal("marshaling roundtrip failed: String()")
+	}
+
+	enc, _ := cid.Base()
+	if enc.Encoding() != mbase.Base58BTC {
+		t.Fatal("base wrong")
+	}
+
+	*cid = cid.ResetBase()
+	if cid.String() != cidStr2 {
+		t.Fatal("marshaling roundtrip failed after ResetBase()")
 	}
 }
 
@@ -355,7 +386,7 @@ func TestHexDecode(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if c.String() != "zb2rhhFAEMepUBbGyP1k8tGfz7BSciKXP6GHuUeUsJBaK6cqG" {
+	if c.String() != hexcid {
 		t.Fatal("hash value failed to round trip decoding from hex")
 	}
 }
@@ -382,7 +413,7 @@ func TestFromJson(t *testing.T) {
 	}
 
 	if c.String() != cval {
-		t.Fatal("json parsing failed")
+		t.Fatalf("json parsing failed: %s != %s", c.String(), cval)
 	}
 }
 
