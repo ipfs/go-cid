@@ -144,29 +144,6 @@ func NewCidV1(codecType uint64, mhash mh.Multihash) *Cid {
 	}
 }
 
-// NewPrefixV0 returns a CIDv0 prefix with the specified multihash type.
-// DEPRECATED: Use FormatV0
-func NewPrefixV0(mhType uint64) Prefix {
-	return Prefix{
-		MhType:   mhType,
-		MhLength: mh.DefaultLengths[mhType],
-		Version:  0,
-		Codec:    DagProtobuf,
-	}
-}
-
-// NewPrefixV1 returns a CIDv1 prefix with the specified codec and multihash
-// type.
-// DEPRECATED: Use FormatV1
-func NewPrefixV1(codecType uint64, mhType uint64) Prefix {
-	return Prefix{
-		MhType:   mhType,
-		MhLength: mh.DefaultLengths[mhType],
-		Version:  1,
-		Codec:    codecType,
-	}
-}
-
 // Cid represents a self-describing content adressed
 // identifier. It is formed by a Version, a Codec (which indicates
 // a multicodec-packed content type) and a Multihash.
