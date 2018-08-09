@@ -4,23 +4,23 @@ import (
 	mh "github.com/multiformats/go-multihash"
 )
 
-type Format interface {
+type Builder interface {
 	Sum(data []byte) (*Cid, error)
 	GetCodec() uint64
-	WithCodec(uint64) Format
+	WithCodec(uint64) Builder
 }
 
-type FormatV0 struct{}
+type V0Builder struct{}
 
-type FormatV1 struct {
+type V1Builder struct {
 	Codec   uint64
 	HashFun uint64
 	HashLen int // HashLen <= 0 means the default length
 }
 
-func PrefixToFormat(p Prefix) Format {
+func PrefixToBuilder(p Prefix) Builder {
 	if p.Version == 0 {
-		return FormatV0{}
+		return V0Builder{}
 	}
 	mhLen := p.MhLength
 	if p.MhType == mh.ID {
@@ -29,7 +29,7 @@ func PrefixToFormat(p Prefix) Format {
 	if mhLen < 0 {
 		mhLen = 0
 	}
-	return FormatV1{
+	return V1Builder{
 		Codec:   p.Codec,
 		HashFun: p.MhType,
 		HashLen: mhLen,
@@ -40,7 +40,7 @@ func (p Prefix) GetCodec() uint64 {
 	return p.Codec
 }
 
-func (p Prefix) WithCodec(c uint64) Format {
+func (p Prefix) WithCodec(c uint64) Builder {
 	if c == p.Codec {
 		return p
 	}
@@ -51,7 +51,7 @@ func (p Prefix) WithCodec(c uint64) Format {
 	return p
 }
 
-func (p FormatV0) Sum(data []byte) (*Cid, error) {
+func (p V0Builder) Sum(data []byte) (*Cid, error) {
 	hash, err := mh.Sum(data, mh.SHA2_256, -1)
 	if err != nil {
 		return nil, err
@@ -59,18 +59,18 @@ func (p FormatV0) Sum(data []byte) (*Cid, error) {
 	return NewCidV0(hash), nil
 }
 
-func (p FormatV0) GetCodec() uint64 {
+func (p V0Builder) GetCodec() uint64 {
 	return DagProtobuf
 }
 
-func (p FormatV0) WithCodec(c uint64) Format {
+func (p V0Builder) WithCodec(c uint64) Builder {
 	if c == DagProtobuf {
 		return p
 	}
-	return FormatV1{Codec: c, HashFun: mh.SHA2_256}
+	return V1Builder{Codec: c, HashFun: mh.SHA2_256}
 }
 
-func (p FormatV1) Sum(data []byte) (*Cid, error) {
+func (p V1Builder) Sum(data []byte) (*Cid, error) {
 	mhLen := p.HashLen
 	if mhLen <= 0 {
 		mhLen = -1
@@ -82,11 +82,11 @@ func (p FormatV1) Sum(data []byte) (*Cid, error) {
 	return NewCidV1(p.Codec, hash), nil
 }
 
-func (p FormatV1) GetCodec() uint64 {
+func (p V1Builder) GetCodec() uint64 {
 	return p.Codec
 }
 
-func (p FormatV1) WithCodec(c uint64) Format {
+func (p V1Builder) WithCodec(c uint64) Builder {
 	p.Codec = c
 	return p
 }

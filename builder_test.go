@@ -10,7 +10,7 @@ func TestFormatV1(t *testing.T) {
 	data := []byte("this is some test content")
 
 	// Construct c1
-	format := FormatV1{Codec: DagCBOR, HashFun: mh.SHA2_256}
+	format := V1Builder{Codec: DagCBOR, HashFun: mh.SHA2_256}
 	c1, err := format.Sum(data)
 	if err != nil {
 		t.Fatal(err)
@@ -35,7 +35,7 @@ func TestFormatV0(t *testing.T) {
 	data := []byte("this is some test content")
 
 	// Construct c1
-	format := FormatV0{}
+	format := V0Builder{}
 	c1, err := format.Sum(data)
 	if err != nil {
 		t.Fatal(err)
@@ -55,4 +55,3 @@ func TestFormatV0(t *testing.T) {
 		t.Fatal("prefixes mismatch")
 	}
 }
-
