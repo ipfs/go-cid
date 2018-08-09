@@ -69,15 +69,16 @@ outer:
 		}
 	}
 	for _, cidStr := range args[1:] {
-		base, cid, err := c.DecodeV2(cidStr)
+		cid, err := c.Decode(cidStr)
 		if err != nil {
 			fmt.Fprintf(os.Stdout, "!INVALID_CID!\n")
 			errorMsg("%s: %v", cidStr, err)
 			// Don't abort on a bad cid
 			continue
 		}
-		if newBase != -1 {
-			base = newBase
+		base := newBase
+		if newBase == -1 {
+			base, _ = c.ExtractEncoding(cidStr)
 		}
 		if verConv != nil {
 			cid, err = verConv(cid)

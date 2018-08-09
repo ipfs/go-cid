@@ -55,12 +55,13 @@ func TestFmt(t *testing.T) {
 }
 
 func testFmt(t *testing.T, cidStr string, newBase mb.Encoding, fmtStr string, result string) {
-	base, cid, err := DecodeV2(cidStr)
-	if newBase != -1 {
-		base = newBase
-	}
+	cid, err := Decode(cidStr)
 	if err != nil {
 		t.Fatal(err)
+	}
+	base := newBase
+	if newBase == -1 {
+		base, _ = ExtractEncoding(cidStr)
 	}
 	str, err := Format(fmtStr, base, cid)
 	if err != nil {
@@ -70,4 +71,3 @@ func testFmt(t *testing.T, cidStr string, newBase mb.Encoding, fmtStr string, re
 		t.Error(fmt.Sprintf("expected: %s; but got: %s", result, str))
 	}
 }
-

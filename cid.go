@@ -213,34 +213,47 @@ func Parse(v interface{}) (*Cid, error) {
 // starting with "Qm" are considered CidV0 and treated directly
 // as B58-encoded multihashes.
 func Decode(v string) (*Cid, error) {
-	_, cid, err := DecodeV2(v)
-	return cid, err
-}
-
-// DecodeV2 is like Decide but also returns the Multibase encoding the
-// Cid was encoded in.  EXPERIMENTAL and interface may change at any time.
-func DecodeV2(v string) (mbase.Encoding, *Cid, error) {
 	if len(v) < 2 {
-		return 0, nil, ErrCidTooShort
+		return nil, ErrCidTooShort
 	}
 
 	if len(v) == 46 && v[:2] == "Qm" {
 		hash, err := mh.FromB58String(v)
 		if err != nil {
-			return 0, nil, err
+			return nil, err
 		}
 
-		return mbase.Base58BTC, NewCidV0(hash), nil
+		return NewCidV0(hash), nil
 	}
 
-	base, data, err := mbase.Decode(v)
+	_, data, err := mbase.Decode(v)
 	if err != nil {
-		return 0, nil, err
+		return nil, err
 	}
 
-	cid, err := Cast(data)
+	return Cast(data)
+}
 
-	return base, cid, err
+// Extract the encoding from a Cid.  If Decode on the same string did
+// not return an error neither will this function.
+func ExtractEncoding(v string) (mbase.Encoding, error) {
+	if len(v) < 2 {
+		return -1, ErrCidTooShort
+	}
+
+	if len(v) == 46 && v[:2] == "Qm" {
+		return mbase.Base58BTC, nil
+	}
+
+	encoding := mbase.Encoding(v[0])
+
+	// check encoding is valid
+	_, err := mbase.NewEncoder(encoding)
+	if err != nil {
+		return -1, err
+	}
+
+	return encoding, nil
 }
 
 func uvError(read int) error {
