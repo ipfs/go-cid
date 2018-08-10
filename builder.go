@@ -13,9 +13,9 @@ type Builder interface {
 type V0Builder struct{}
 
 type V1Builder struct {
-	Codec   uint64
-	HashFun uint64
-	HashLen int // HashLen <= 0 means the default length
+	Codec    uint64
+	MhType   uint64
+	MhLength int // MhLength <= 0 means the default length
 }
 
 func (p Prefix) GetCodec() uint64 {
@@ -49,15 +49,15 @@ func (p V0Builder) WithCodec(c uint64) Builder {
 	if c == DagProtobuf {
 		return p
 	}
-	return V1Builder{Codec: c, HashFun: mh.SHA2_256}
+	return V1Builder{Codec: c, MhType: mh.SHA2_256}
 }
 
 func (p V1Builder) Sum(data []byte) (*Cid, error) {
-	mhLen := p.HashLen
+	mhLen := p.MhLength
 	if mhLen <= 0 {
 		mhLen = -1
 	}
-	hash, err := mh.Sum(data, p.HashFun, mhLen)
+	hash, err := mh.Sum(data, p.MhType, mhLen)
 	if err != nil {
 		return nil, err
 	}

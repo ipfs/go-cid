@@ -35,7 +35,7 @@ func TestV1Builder(t *testing.T) {
 	data := []byte("this is some test content")
 
 	// Construct c1
-	format := V1Builder{Codec: DagCBOR, HashFun: mh.SHA2_256}
+	format := V1Builder{Codec: DagCBOR, MhType: mh.SHA2_256}
 	c1, err := format.Sum(data)
 	if err != nil {
 		t.Fatal(err)
@@ -69,7 +69,7 @@ func TestCodecChange(t *testing.T) {
 		testCodecChange(t, V0Builder{})
 	})
 	t.Run("V1Builder", func(t *testing.T) {
-		testCodecChange(t, V1Builder{Codec: DagProtobuf, HashFun: mh.SHA2_256})
+		testCodecChange(t, V1Builder{Codec: DagProtobuf, MhType: mh.SHA2_256})
 	})
 }
 
