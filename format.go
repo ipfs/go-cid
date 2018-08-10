@@ -36,7 +36,7 @@ used.  For Cid version 1 the multibase prefix is included.
 // documented in the FormatRef constant
 func Format(fmtStr string, base mb.Encoding, cid *Cid) (string, error) {
 	p := cid.Prefix()
-	out := new(bytes.Buffer)
+	var out bytes.Buffer
 	var err error
 	encoder, err := mb.NewEncoder(base)
 	if err != nil {
@@ -59,19 +59,19 @@ func Format(fmtStr string, base mb.Encoding, cid *Cid) (string, error) {
 		case 'B': // base code
 			out.WriteByte(byte(base))
 		case 'v': // version string
-			fmt.Fprintf(out, "cidv%d", p.Version)
+			fmt.Fprintf(&out, "cidv%d", p.Version)
 		case 'V': // version num
-			fmt.Fprintf(out, "%d", p.Version)
+			fmt.Fprintf(&out, "%d", p.Version)
 		case 'c': // codec name
 			out.WriteString(codecToString(p.Codec))
 		case 'C': // codec code
-			fmt.Fprintf(out, "%d", p.Codec)
+			fmt.Fprintf(&out, "%d", p.Codec)
 		case 'h': // hash fun name
 			out.WriteString(hashToString(p.MhType))
 		case 'H': // hash fun code
-			fmt.Fprintf(out, "%d", p.MhType)
+			fmt.Fprintf(&out, "%d", p.MhType)
 		case 'L': // hash length
-			fmt.Fprintf(out, "%d", p.MhLength)
+			fmt.Fprintf(&out, "%d", p.MhLength)
 		case 'm', 'M': // multihash encoded in base %b
 			out.WriteString(encode(encoder, cid.Hash(), fmtStr[i] == 'M'))
 		case 'd', 'D': // hash digest encoded in base %b
@@ -89,7 +89,7 @@ func Format(fmtStr string, base mb.Encoding, cid *Cid) (string, error) {
 		case 'S': // cid string without base prefix
 			out.WriteString(encode(encoder, cid.Bytes(), true))
 		case 'P': // prefix
-			fmt.Fprintf(out, "cidv%d-%s-%s-%d",
+			fmt.Fprintf(&out, "cidv%d-%s-%s-%d",
 				p.Version,
 				codecToString(p.Codec),
 				hashToString(p.MhType),
