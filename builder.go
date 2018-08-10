@@ -18,24 +18,6 @@ type V1Builder struct {
 	HashLen int // HashLen <= 0 means the default length
 }
 
-func PrefixToBuilder(p Prefix) Builder {
-	if p.Version == 0 {
-		return V0Builder{}
-	}
-	mhLen := p.MhLength
-	if p.MhType == mh.ID {
-		mhLen = 0
-	}
-	if mhLen < 0 {
-		mhLen = 0
-	}
-	return V1Builder{
-		Codec:   p.Codec,
-		HashFun: p.MhType,
-		HashLen: mhLen,
-	}
-}
-
 func (p Prefix) GetCodec() uint64 {
 	return p.Codec
 }
