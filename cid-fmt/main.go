@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"os"
 	"strings"
@@ -9,37 +8,13 @@ import (
 	c "github.com/ipfs/go-cid"
 
 	mb "github.com/multiformats/go-multibase"
-	mh "github.com/multiformats/go-multihash"
 )
 
 func usage() {
 	fmt.Fprintf(os.Stderr, "usage: %s [-b multibase-code] [-v cid-version] <fmt-str> <cid> ...\n\n", os.Args[0])
-	fmt.Fprintf(os.Stderr, "<fmt-str> is either 'prefix' or a printf style format string:\n%s", fmtRef)
+	fmt.Fprintf(os.Stderr, "<fmt-str> is either 'prefix' or a printf style format string:\n%s", c.FormatRef)
 	os.Exit(2)
 }
-
-const fmtRef = `
-   %% literal %
-   %b multibase name 
-   %B multibase code
-   %v version string
-   %V version number
-   %c codec name
-   %C codec code
-   %h multihash name
-   %H multihash code
-   %L hash digest length
-   %m multihash encoded in base %b (with multibase prefix)
-   %M multihash encoded in base %b without multibase prefix
-   %d hash digest encoded in base %b (with multibase prefix)
-   %D hash digest encoded in base %b without multibase prefix
-   %s cid string encoded in base %b (1)
-   %s cid string encoded in base %b without multibase prefix
-   %P cid prefix: %v-%c-%h-%L
-
-(1) For CID version 0 the multibase must be base58btc and no prefix is
-used.  For Cid version 1 the multibase prefix is included.
-`
 
 func main() {
 	if len(os.Args) < 2 {
@@ -55,11 +30,12 @@ outer:
 			if len(args) < 2 {
 				usage()
 			}
-			if len(args[1]) != 1 {
-				fmt.Fprintf(os.Stderr, "Error: Invalid multibase code: %s\n", args[1])
+			encoder, err := mb.EncoderByName(args[1])
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error: %s\n", err.Error())
 				os.Exit(2)
 			}
-			newBase = mb.Encoding(args[1][0])
+			newBase = encoder.Encoding()
 			args = args[2:]
 		case "-v":
 			if len(args) < 2 {
@@ -93,15 +69,16 @@ outer:
 		}
 	}
 	for _, cidStr := range args[1:] {
-		base, cid, err := decode(cidStr)
+		cid, err := c.Decode(cidStr)
 		if err != nil {
 			fmt.Fprintf(os.Stdout, "!INVALID_CID!\n")
 			errorMsg("%s: %v", cidStr, err)
 			// Don't abort on a bad cid
 			continue
 		}
-		if newBase != -1 {
-			base = newBase
+		base := newBase
+		if newBase == -1 {
+			base, _ = c.ExtractEncoding(cidStr)
 		}
 		if verConv != nil {
 			cid, err = verConv(cid)
@@ -112,11 +89,18 @@ outer:
 				continue
 			}
 		}
-		str, err := fmtCid(fmtStr, base, cid)
-		if err != nil {
+		str, err := c.Format(fmtStr, base, cid)
+		switch err.(type) {
+		case c.FormatStringError:
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-			// An error here means a bad format string, no point in continuing
 			os.Exit(2)
+		default:
+			fmt.Fprintf(os.Stdout, "!ERROR!\n")
+			errorMsg("%s: %v", cidStr, err)
+			// Don't abort on cid specific errors
+			continue
+		case nil:
+			// no error
 		}
 		fmt.Fprintf(os.Stdout, "%s\n", str)
 	}
@@ -130,139 +114,6 @@ func errorMsg(fmtStr string, a ...interface{}) {
 	fmt.Fprintf(os.Stderr, fmtStr, a...)
 	fmt.Fprintf(os.Stderr, "\n")
 	exitCode = 1
-}
-
-func decode(v string) (mb.Encoding, *c.Cid, error) {
-	if len(v) < 2 {
-		return 0, nil, c.ErrCidTooShort
-	}
-
-	if len(v) == 46 && v[:2] == "Qm" {
-		hash, err := mh.FromB58String(v)
-		if err != nil {
-			return 0, nil, err
-		}
-
-		return mb.Base58BTC, c.NewCidV0(hash), nil
-	}
-
-	base, data, err := mb.Decode(v)
-	if err != nil {
-		return 0, nil, err
-	}
-
-	cid, err := c.Cast(data)
-
-	return base, cid, err
-}
-
-const ERR_STR = "!ERROR!"
-
-func fmtCid(fmtStr string, base mb.Encoding, cid *c.Cid) (string, error) {
-	p := cid.Prefix()
-	out := new(bytes.Buffer)
-	var err error
-	for i := 0; i < len(fmtStr); i++ {
-		if fmtStr[i] != '%' {
-			out.WriteByte(fmtStr[i])
-			continue
-		}
-		i++
-		if i >= len(fmtStr) {
-			return "", fmt.Errorf("premature end of format string")
-		}
-		switch fmtStr[i] {
-		case '%':
-			out.WriteByte('%')
-		case 'b': // base name
-			out.WriteString(baseToString(base))
-		case 'B': // base code
-			out.WriteByte(byte(base))
-		case 'v': // version string
-			fmt.Fprintf(out, "cidv%d", p.Version)
-		case 'V': // version num
-			fmt.Fprintf(out, "%d", p.Version)
-		case 'c': // codec name
-			out.WriteString(codecToString(p.Codec))
-		case 'C': // codec code
-			fmt.Fprintf(out, "%d", p.Codec)
-		case 'h': // hash fun name
-			out.WriteString(hashToString(p.MhType))
-		case 'H': // hash fun code
-			fmt.Fprintf(out, "%d", p.MhType)
-		case 'L': // hash length
-			fmt.Fprintf(out, "%d", p.MhLength)
-		case 'm', 'M': // multihash encoded in base %b
-			out.WriteString(encode(base, cid.Hash(), fmtStr[i] == 'M'))
-		case 'd', 'D': // hash digest encoded in base %b
-			dec, err := mh.Decode(cid.Hash())
-			if err != nil {
-				out.WriteString(ERR_STR)
-				errorMsg("%v", err)
-				continue
-			}
-			out.WriteString(encode(base, dec.Digest, fmtStr[i] == 'D'))
-		case 's': // cid string encoded in base %b
-			str, err := cid.StringOfBase(base)
-			if err != nil {
-				out.WriteString(ERR_STR)
-				errorMsg("%v", err)
-				continue
-			}
-			out.WriteString(str)
-		case 'S': // cid string without base prefix
-			out.WriteString(encode(base, cid.Bytes(), true))
-		case 'P': // prefix
-			fmt.Fprintf(out, "cidv%d-%s-%s-%d",
-				p.Version,
-				codecToString(p.Codec),
-				hashToString(p.MhType),
-				p.MhLength,
-			)
-		default:
-			return "", fmt.Errorf("unrecognized specifier in format string: %c", fmtStr[i])
-		}
-
-	}
-	return out.String(), err
-}
-
-func baseToString(base mb.Encoding) string {
-	// FIXME: Use lookup tables when they are added to go-multibase
-	switch base {
-	case mb.Base58BTC:
-		return "base58btc"
-	default:
-		return fmt.Sprintf("base?%c", base)
-	}
-}
-
-func codecToString(num uint64) string {
-	name, ok := c.CodecToStr[num]
-	if !ok {
-		return fmt.Sprintf("codec?%d", num)
-	}
-	return name
-}
-
-func hashToString(num uint64) string {
-	name, ok := mh.Codes[num]
-	if !ok {
-		return fmt.Sprintf("hash?%d", num)
-	}
-	return name
-}
-
-func encode(base mb.Encoding, data []byte, strip bool) string {
-	str, err := mb.Encode(base, data)
-	if err != nil {
-		errorMsg("%v", err)
-		return ERR_STR
-	}
-	if strip {
-		return str[1:]
-	}
-	return str
 }
 
 func toCidV0(cid *c.Cid) (*c.Cid, error) {

@@ -213,6 +213,28 @@ func Decode(v string) (*Cid, error) {
 	return Cast(data)
 }
 
+// Extract the encoding from a Cid.  If Decode on the same string did
+// not return an error neither will this function.
+func ExtractEncoding(v string) (mbase.Encoding, error) {
+	if len(v) < 2 {
+		return -1, ErrCidTooShort
+	}
+
+	if len(v) == 46 && v[:2] == "Qm" {
+		return mbase.Base58BTC, nil
+	}
+
+	encoding := mbase.Encoding(v[0])
+
+	// check encoding is valid
+	_, err := mbase.NewEncoder(encoding)
+	if err != nil {
+		return -1, err
+	}
+
+	return encoding, nil
+}
+
 func uvError(read int) error {
 	switch {
 	case read == 0:
