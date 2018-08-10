@@ -414,3 +414,17 @@ func TestJsonRoundTrip(t *testing.T) {
 		t.Fatal("cids not equal for Cid")
 	}
 }
+
+func BenchmarkStringV1(b *testing.B) {
+	data := []byte("this is some test content")
+	hash, _ := mh.Sum(data, mh.SHA2_256, -1)
+	cid := NewCidV1(Raw, hash)
+	b.ResetTimer()
+	count := 0
+	for i := 0; i < b.N; i++ {
+		count += len(cid.String())
+	}
+	if count != 49*b.N {
+		b.FailNow()
+	}
+}
