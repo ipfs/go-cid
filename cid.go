@@ -31,6 +31,9 @@ import (
 	mh "github.com/multiformats/go-multihash"
 )
 
+// DefaultBase is the default base to use when encoding CidV1
+var DefaultBase mbase.Encoding = mbase.Base58BTC
+
 // UnsupportedVersionString just holds an error message
 const UnsupportedVersionString = "<unsupported cid version>"
 
@@ -134,6 +137,7 @@ var CodecToStr = map[uint64]string{
 // NewCidV1 should be used preferentially.
 func NewCidV0(mhash mh.Multihash) *Cid {
 	return &Cid{
+		base:    -1,
 		version: 0,
 		codec:   DagProtobuf,
 		hash:    mhash,
@@ -144,6 +148,7 @@ func NewCidV0(mhash mh.Multihash) *Cid {
 // content type.
 func NewCidV1(codecType uint64, mhash mh.Multihash) *Cid {
 	return &Cid{
+		base:    -1,
 		version: 1,
 		codec:   codecType,
 		hash:    mhash,
@@ -175,6 +180,7 @@ func NewPrefixV1(codecType uint64, mhType uint64) Prefix {
 // identifier. It is formed by a Version, a Codec (which indicates
 // a multicodec-packed content type) and a Multihash.
 type Cid struct {
+	base    mbase.Encoding // -1 if not defined
 	version uint64
 	codec   uint64
 	hash    mh.Multihash
@@ -226,12 +232,17 @@ func Decode(v string) (*Cid, error) {
 		return NewCidV0(hash), nil
 	}
 
-	_, data, err := mbase.Decode(v)
+	base, data, err := mbase.Decode(v)
 	if err != nil {
 		return nil, err
 	}
 
-	return Cast(data)
+	c, err := Cast(data)
+	if err != nil {
+		return nil, err
+	}
+	c.base = base
+	return c, nil
 }
 
 func uvError(read int) error {
@@ -263,11 +274,7 @@ func Cast(data []byte) (*Cid, error) {
 			return nil, err
 		}
 
-		return &Cid{
-			codec:   DagProtobuf,
-			version: 0,
-			hash:    h,
-		}, nil
+		return NewCidV0(h), nil
 	}
 
 	vers, n := binary.Uvarint(data)
@@ -291,6 +298,7 @@ func Cast(data []byte) (*Cid, error) {
 	}
 
 	return &Cid{
+		base:    -1,
 		version: vers,
 		codec:   codec,
 		hash:    h,
@@ -302,27 +310,56 @@ func (c *Cid) Type() uint64 {
 	return c.codec
 }
 
-// String returns the default string representation of a
-// Cid. Currently, Base58 is used as the encoding for the
-// multibase string.
+func (c *Cid) HaveBase() bool {
+	return c.base != -1
+}
+
+func (c *Cid) Base() mbase.Encoder {
+	base := c.base
+	if c.base == -1 {
+		base = DefaultBase
+		if c.version == 0 {
+			base = mbase.Base58BTC
+		}
+	}
+	encoder, err := mbase.NewEncoder(base)
+	if err != nil {
+		panic(err) // should not happen
+	}
+	return encoder
+}
+
+// WithBase changes the Multibase that associated with the Cid.  If
+// the Cid is version 0 then the multibase is ignored when conversting
+// to a string, but the value is still associated with the Cid.  This
+// is useful when, for example, converting a CidV0 to CidV1.
+func (c *Cid) WithBase(b mbase.Encoder) *Cid {
+	c2 := *c
+	c2.base = b.Encoding()
+	return &c2
+}
+
+// ResetBase resets the base to the default value
+func (c *Cid) ResetBase() *Cid {
+	c2 := *c
+	c2.base = -1
+	return &c2
+}
+
+// String returns the string representation of a Cid.
 func (c *Cid) String() string {
 	switch c.version {
 	case 0:
 		return c.hash.B58String()
 	case 1:
-		mbstr, err := mbase.Encode(mbase.Base58BTC, c.bytesV1())
-		if err != nil {
-			panic("should not error with hardcoded mbase: " + err.Error())
-		}
-
-		return mbstr
+		return c.Base().Encode(c.bytesV1())
 	default:
 		panic("not possible to reach this point")
 	}
 }
 
-// String returns the string representation of a Cid
-// encoded is selected base
+// StringOfBase returns the string representation of a Cid encoded is
+// selected base.  Deprecated use: WithBase(...).String()
 func (c *Cid) StringOfBase(base mbase.Encoding) (string, error) {
 	switch c.version {
 	case 0:
@@ -376,6 +413,8 @@ func (c *Cid) bytesV1() []byte {
 // Equals checks that two Cids are the same.
 // In order for two Cids to be considered equal, the
 // Version, the Codec and the Multihash must match.
+// Two Cids can be equal even if they have different
+// multibases associated with them.
 func (c *Cid) Equals(o *Cid) bool {
 	return c.codec == o.codec &&
 		c.version == o.version &&
@@ -404,6 +443,7 @@ func (c *Cid) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
+	c.base = out.base
 	c.version = out.version
 	c.hash = out.hash
 	c.codec = out.codec

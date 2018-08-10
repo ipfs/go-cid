@@ -133,27 +133,11 @@ func errorMsg(fmtStr string, a ...interface{}) {
 }
 
 func decode(v string) (mb.Encoding, *c.Cid, error) {
-	if len(v) < 2 {
-		return 0, nil, c.ErrCidTooShort
-	}
-
-	if len(v) == 46 && v[:2] == "Qm" {
-		hash, err := mh.FromB58String(v)
-		if err != nil {
-			return 0, nil, err
-		}
-
-		return mb.Base58BTC, c.NewCidV0(hash), nil
-	}
-
-	base, data, err := mb.Decode(v)
+	cid, err := c.Decode(v)
 	if err != nil {
-		return 0, nil, err
+		return -1, cid, err
 	}
-
-	cid, err := c.Cast(data)
-
-	return base, cid, err
+	return cid.Base().Encoding(), cid, err
 }
 
 const ERR_STR = "!ERROR!"
