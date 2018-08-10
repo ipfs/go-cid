@@ -203,8 +203,7 @@ func testHandling(t *testing.T, v uint64, cidStr, cidStr2 string) {
 		t.Fatal("marshaling roundtrip failed: String()")
 	}
 
-	enc, _ := cid.Base()
-	if enc.Encoding() != mbase.Base58BTC {
+	if cid.Base().Encoding() != mbase.Base58BTC {
 		t.Fatal("base wrong")
 	}
 

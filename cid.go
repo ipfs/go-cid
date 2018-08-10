@@ -310,22 +310,23 @@ func (c *Cid) Type() uint64 {
 	return c.codec
 }
 
-// Base returns a the multibase associated with the Cid
-func (c *Cid) Base() (mbase.Encoder, bool) {
+func (c *Cid) HaveBase() bool {
+	return c.base != -1
+}
+
+func (c *Cid) Base() mbase.Encoder {
 	base := c.base
-	defined := true
 	if c.base == -1 {
 		base = DefaultBase
 		if c.version == 0 {
 			base = mbase.Base58BTC
 		}
-		defined = false
 	}
 	encoder, err := mbase.NewEncoder(base)
 	if err != nil {
 		panic(err) // should not happen
 	}
-	return encoder, defined
+	return encoder
 }
 
 // WithBase changes the Multibase that associated with the Cid.  If
@@ -351,8 +352,7 @@ func (c *Cid) String() string {
 	case 0:
 		return c.hash.B58String()
 	case 1:
-		enc, _ := c.Base()
-		return enc.Encode(c.bytesV1())
+		return c.Base().Encode(c.bytesV1())
 	default:
 		panic("not possible to reach this point")
 	}

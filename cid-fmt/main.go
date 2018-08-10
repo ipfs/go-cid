@@ -137,8 +137,7 @@ func decode(v string) (mb.Encoding, *c.Cid, error) {
 	if err != nil {
 		return -1, cid, err
 	}
-	enc, _ := cid.Base()
-	return enc.Encoding(), cid, err
+	return cid.Base().Encoding(), cid, err
 }
 
 const ERR_STR = "!ERROR!"
