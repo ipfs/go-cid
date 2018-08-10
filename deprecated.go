@@ -5,7 +5,7 @@ import (
 )
 
 // NewPrefixV0 returns a CIDv0 prefix with the specified multihash type.
-// DEPRECATED: Use FormatV0
+// DEPRECATED: Use V0Builder
 func NewPrefixV0(mhType uint64) Prefix {
 	return Prefix{
 		MhType:   mhType,
@@ -17,7 +17,7 @@ func NewPrefixV0(mhType uint64) Prefix {
 
 // NewPrefixV1 returns a CIDv1 prefix with the specified codec and multihash
 // type.
-// DEPRECATED: Use FormatV1
+// DEPRECATED: Use V1Builder
 func NewPrefixV1(codecType uint64, mhType uint64) Prefix {
 	return Prefix{
 		MhType:   mhType,
