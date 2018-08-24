@@ -46,6 +46,9 @@ Option C is the avoid-choices choice, but note that interfaces are not free;
 since "minimize mallocs" is one of our major goals, we cannot use interfaces
 whimsically.
 
+Note there is no proposal for migrating to `type Cid []bytes`, because that
+is generally considered to be strictly inferior to `type Cid string`.
+
 
 Discoveries
 -----------
@@ -62,3 +65,60 @@ concrete types.  This means its effectively *never safe* to use two different
 concrete implementations of an interface in the same map; you may add elements
 which are semantically "equal" in your mind, and end up very confused later
 when both impls of the same "equal" object have been stored.
+
+### sentinel values are possible in any impl, but some are clearer than others
+
+When using `*Cid`, the nil value is a clear sentinel for 'invalid';
+when using `type Cid string`, the zero value is a clear sentinel;
+when using `type Cid struct` per Option A or D... the only valid check is
+for a nil multihash field, since version=0 and codec=0 are both valid values.
+
+### usability as a map key is important
+
+We already covered this in the criteria section, but for clarity:
+
+- Option A: ❌
+- Option B: ✔
+- Option C: ~ (caveats, and depends on concrete impl)
+- Option D: ✔
+- Option E: ✔
+
+### living without offsets requires parsing
+
+Since CID (and multihash!) are defined using varints, they require parsing;
+we can't just jump into the string at a known offset in order to yield e.g.
+the multicodec number.
+
+In order to get to the 'meat' of the CID (the multihash content), we first
+must parse:
+
+- the CID version varint;
+- the multicodec varint;
+- the multihash type enum varint;
+- and the multihash length varint.
+
+Since there are many applications where we want to jump straight to the
+multihash content (for example, when doing CAS sharding -- see the
+[disclaimer](https://github.com/multiformats/multihash#disclaimers) about
+bias in leading bytes), this overhead may be interesting.
+
+How much this overhead is significant is hard to say from microbenchmarking;
+it depends largely on usage patterns. If these traversals are a significant
+timesink, it would be an argument for Option D/E.
+If these traversals are *not* a significant timesink, we might be wiser
+to keep to Option B, because keeping a struct full of offsets will add several
+words of memory usage per CID, and we keep a *lot* of CIDs.
+
+### one way or another: let's get rid of that star
+
+We should switch completely to handling `Cid` and remove `*Cid` completely.
+Regardless of whether we do this by migrating to interface, or string
+implementations, or simply structs with no pointers... once we get there,
+refactoring to any of the *others* can become a no-op from the perspective
+of any downstream code that uses CIDs.
+
+(This means all access via functions, never references to fields -- even if
+we were to use a struct implementation.  *Pretend* there's a interface,
+in other words.)
+
+There are probably `gofix` incantations which can help us with this migration.
