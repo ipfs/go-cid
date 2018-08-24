@@ -22,6 +22,7 @@ type Cid interface {
 	Multihash() mh.Multihash // Yields the multihash segment.
 
 	String() string // Produces the CID formatted as b58 string.
+	Bytes() []byte  // Produces the CID formatted as raw binary.
 
 	Prefix() Prefix // Produces a tuple of non-content metadata.
 
@@ -29,7 +30,8 @@ type Cid interface {
 	// - `KeyString() CidString` is gone because we're natively a map key now, you're welcome.
 	// - `StringOfBase(mbase.Encoding) (string, error)` is skipped, maybe it can come back but maybe it should be a formatter's job.
 	// - `Equals(o Cid) bool` is gone because it's now `==`, you're welcome.
-	// - `Bytes() []byte` is gone because I can't imagine where that should be used except again where a formatter should be involved.
+
+	// TODO: make a multi-return method for {v,mc,mh} decomposition.  CidStr will be able to implement this more efficiently than if one makes a series of the individual getter calls.
 }
 
 // Prefix represents all the metadata of a Cid,
