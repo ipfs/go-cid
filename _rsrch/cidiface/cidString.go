@@ -96,7 +96,7 @@ func (c CidStr) Prefix() Prefix {
 // parsers & validators & factories
 //==================================
 
-func newCidStr(version uint64, codecType uint64, mhash mh.Multihash) CidStr {
+func NewCidStr(version uint64, codecType uint64, mhash mh.Multihash) CidStr {
 	hashlen := len(mhash)
 	// two 8 bytes (max) numbers plus hash
 	buf := make([]byte, 2*binary.MaxVarintLen64+hashlen)
@@ -133,7 +133,7 @@ func CidStrParse(data []byte) (CidStr, error) {
 		if err != nil {
 			return EmptyCidStr, err
 		}
-		return newCidStr(0, DagProtobuf, h), nil
+		return NewCidStr(0, DagProtobuf, h), nil
 	}
 
 	vers, n := binary.Uvarint(data)

@@ -109,6 +109,26 @@ If these traversals are *not* a significant timesink, we might be wiser
 to keep to Option B, because keeping a struct full of offsets will add several
 words of memory usage per CID, and we keep a *lot* of CIDs.
 
+### interfaces cause boxing which is a significant performance cost
+
+See `BenchmarkCidMap_CidStr` and friends.
+
+Long story short: using interfaces *anywhere* will cause the compiler to
+implicitly generate boxing and unboxing code (e.g. `runtime.convT2E`);
+this is both another function call, and more concerningly, results in
+large numbers of unbatchable memory allocations.
+
+Numbers without context are dangerous, but if you need one: 33%.
+It's a big deal.
+
+This means attempts to "use interfaces, but switch to concrete impls when
+performance is important" are a red herring: it doesn't work that way.
+
+This is not a general inditement against using interfaces -- but
+if a situation is at the scale where it's become important to mind whether
+or not pointers are a performance impact, then that situation also
+is one where you have to think twice before using interfaces.
+
 ### one way or another: let's get rid of that star
 
 We should switch completely to handling `Cid` and remove `*Cid` completely.
