@@ -15,6 +15,8 @@ import (
 var _ Cid = CidStruct{}
 
 //var _ map[CidStruct]struct{} = nil // Will not compile!  See struct def docs.
+//var _ map[Cid]struct{} = map[Cid]struct{}{CidStruct{}: struct{}{}} // Legal to compile...
+// but you'll get panics: "runtime error: hash of unhashable type cid.CidStruct"
 
 // CidStruct represents a CID in a struct format.
 //
