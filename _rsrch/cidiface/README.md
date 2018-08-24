@@ -3,10 +3,7 @@ What golang Kinds work best to implement CIDs?
 
 There are many possible ways to implement CIDs.  This package explores them.
 
-- Option A: CIDs as a struct; multihash as bytes.
-- Option B: CIDs as a string.
-- Option C: CIDs as an interface with multiple implementors.
-- Option D: CIDs as a struct; multihash also as a struct or string.
+### criteria
 
 There's a couple different criteria to consider:
 
@@ -20,6 +17,34 @@ mapkeys > minalloc > anythingelse.
 representation that can work natively as a map key, we'll end up needing
 a `KeyRepr()` method which gives us something that does work as a map key,
 an that will almost certainly involve a malloc itself.)
+
+### options
+
+There are quite a few different ways to go:
+
+- Option A: CIDs as a struct; multihash as bytes.
+- Option B: CIDs as a string.
+- Option C: CIDs as an interface with multiple implementors.
+- Option D: CIDs as a struct; multihash also as a struct or string.
+- Option E: CIDs as a struct; content as strings plus offsets.
+
+The current approach on the master branch is Option A.
+
+Option D is distinctive from Option A because multihash as bytes transitively
+causes the CID struct to be non-comparible and thus not suitable for map keys
+as per https://golang.org/ref/spec#KeyType .  (It's also a bit more work to
+pursue Option D because it's just a bigger splash radius of change; but also,
+something we might also want to do soon, because we *do* also have these same
+map-key-usability concerns with multihash alone.)
+
+Option E is distinctive from Option D because Option E would always maintain
+the binary format of the cid internally, and so could yield it again without
+malloc, while still potentially having faster access to components than
+Option B since it wouldn't need to re-parse varints to access later fields.
+
+Option C is the avoid-choices choice, but note that interfaces are not free;
+since "minimize mallocs" is one of our major goals, we cannot use interfaces
+whimsically.
 
 
 Discoveries
