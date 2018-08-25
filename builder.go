@@ -36,7 +36,7 @@ func (p Prefix) WithCodec(c uint64) Builder {
 func (p V0Builder) Sum(data []byte) (Cid, error) {
 	hash, err := mh.Sum(data, mh.SHA2_256, -1)
 	if err != nil {
-		return EmptyCid, err
+		return Nil, err
 	}
 	return NewCidV0(hash), nil
 }
@@ -59,7 +59,7 @@ func (p V1Builder) Sum(data []byte) (Cid, error) {
 	}
 	hash, err := mh.Sum(data, p.MhType, mhLen)
 	if err != nil {
-		return EmptyCid, err
+		return Nil, err
 	}
 	return NewCidV1(p.Codec, hash), nil
 }

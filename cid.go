@@ -161,7 +161,7 @@ func NewCidV1(codecType uint64, mhash mh.Multihash) Cid {
 // - hash mh.Multihash
 type Cid string
 
-var EmptyCid = Cid("")
+var Nil = Cid("")
 
 // Parse is a short-hand function to perform Decode, Cast etc... on
 // a generic interface{} type.
@@ -179,7 +179,7 @@ func Parse(v interface{}) (Cid, error) {
 	case Cid:
 		return v2, nil
 	default:
-		return EmptyCid, fmt.Errorf("can't parse %+v as Cid", v2)
+		return Nil, fmt.Errorf("can't parse %+v as Cid", v2)
 	}
 }
 
@@ -197,13 +197,13 @@ func Parse(v interface{}) (Cid, error) {
 // as B58-encoded multihashes.
 func Decode(v string) (Cid, error) {
 	if len(v) < 2 {
-		return EmptyCid, ErrCidTooShort
+		return Nil, ErrCidTooShort
 	}
 
 	if len(v) == 46 && v[:2] == "Qm" {
 		hash, err := mh.FromB58String(v)
 		if err != nil {
-			return EmptyCid, err
+			return Nil, err
 		}
 
 		return NewCidV0(hash), nil
@@ -211,7 +211,7 @@ func Decode(v string) (Cid, error) {
 
 	_, data, err := mbase.Decode(v)
 	if err != nil {
-		return EmptyCid, err
+		return Nil, err
 	}
 
 	return Cast(data)
@@ -265,7 +265,7 @@ func Cast(data []byte) (Cid, error) {
 	if len(data) == 34 && data[0] == 18 && data[1] == 32 {
 		h, err := mh.Cast(data)
 		if err != nil {
-			return EmptyCid, err
+			return Nil, err
 		}
 
 		return NewCidV0(h), nil
@@ -273,22 +273,22 @@ func Cast(data []byte) (Cid, error) {
 
 	vers, n := binary.Uvarint(data)
 	if err := uvError(n); err != nil {
-		return EmptyCid, err
+		return Nil, err
 	}
 
 	if vers != 1 {
-		return EmptyCid, fmt.Errorf("expected 1 as the cid version number, got: %d", vers)
+		return Nil, fmt.Errorf("expected 1 as the cid version number, got: %d", vers)
 	}
 
 	_, cn := binary.Uvarint(data[n:])
 	if err := uvError(cn); err != nil {
-		return EmptyCid, err
+		return Nil, err
 	}
 
 	rest := data[n+cn:]
 	h, err := mh.Cast(rest)
 	if err != nil {
-		return EmptyCid, err
+		return Nil, err
 	}
 
 	return Cid(data[0 : n+cn+len(h)]), nil
@@ -470,7 +470,7 @@ type Prefix struct {
 func (p Prefix) Sum(data []byte) (Cid, error) {
 	hash, err := mh.Sum(data, p.MhType, p.MhLength)
 	if err != nil {
-		return EmptyCid, err
+		return Nil, err
 	}
 
 	switch p.Version {
@@ -479,7 +479,7 @@ func (p Prefix) Sum(data []byte) (Cid, error) {
 	case 1:
 		return NewCidV1(p.Codec, hash), nil
 	default:
-		return EmptyCid, fmt.Errorf("invalid cid version")
+		return Nil, fmt.Errorf("invalid cid version")
 	}
 }
 
