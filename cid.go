@@ -159,7 +159,7 @@ func NewCidV1(codecType uint64, mhash mh.Multihash) Cid {
 // - version uvarint
 // - codec uvarint
 // - hash mh.Multihash
-type Cid struct{ string }
+type Cid struct{ str string }
 
 var Nil = Cid{}
 
@@ -296,7 +296,7 @@ func Cast(data []byte) (Cid, error) {
 
 // Version returns the Cid version.
 func (c Cid) Version() uint64 {
-	if len(c.string) == 34 && c.string[0] == 18 && c.string[1] == 32 {
+	if len(c.str) == 34 && c.str[0] == 18 && c.str[1] == 32 {
 		return 0
 	}
 	return 1
@@ -307,9 +307,8 @@ func (c Cid) Type() uint64 {
 	if c.Version() == 0 {
 		return DagProtobuf
 	}
-	bytes := c.Bytes()
-	_, n := binary.Uvarint(bytes)
-	codec, _ := binary.Uvarint(bytes[n:])
+	_, n := uvarint(c.str)
+	codec, _ := uvarint(c.str[n:])
 	return codec
 }
 
@@ -382,7 +381,7 @@ func (c Cid) Hash() mh.Multihash {
 // The output of bytes can be parsed back into a Cid
 // with Cast().
 func (c Cid) Bytes() []byte {
-	return []byte(c.string)
+	return []byte(c.str)
 }
 
 // Equals checks that two Cids are the same.
@@ -431,7 +430,7 @@ func (c Cid) MarshalJSON() ([]byte, error) {
 
 // KeyString returns the binary representation of the Cid as a string
 func (c Cid) KeyString() string {
-	return c.string
+	return c.str
 }
 
 // Loggable returns a Loggable (as defined by
