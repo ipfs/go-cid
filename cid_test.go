@@ -77,7 +77,7 @@ func TestBasicMarshaling(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cid := newCid(1, 7, h)
+	cid := NewCidV1(7, h)
 
 	data := cid.Bytes()
 
@@ -103,7 +103,7 @@ func TestBasesMarshaling(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cid := newCid(1, 7, h)
+	cid := NewCidV1(7, h)
 
 	data := cid.Bytes()
 
@@ -298,7 +298,7 @@ func TestPrefixRoundtrip(t *testing.T) {
 func Test16BytesVarint(t *testing.T) {
 	data := []byte("this is some test content")
 	hash, _ := mh.Sum(data, mh.SHA2_256, -1)
-	c := newCid(1, 1<<63, hash)
+	c := NewCidV1(1<<63, hash)
 	_ = c.Bytes()
 }
 

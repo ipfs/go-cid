@@ -133,20 +133,16 @@ var CodecToStr = map[uint64]string{
 // compatibility with the plain-multihash format used used in IPFS.
 // NewCidV1 should be used preferentially.
 func NewCidV0(mhash mh.Multihash) Cid {
-	return newCid(0, DagProtobuf, mhash)
+	return Cid(mhash)
 }
 
 // NewCidV1 returns a new Cid using the given multicodec-packed
 // content type.
 func NewCidV1(codecType uint64, mhash mh.Multihash) Cid {
-	return newCid(1, codecType, mhash)
-}
-
-func newCid(version, codecType uint64, mhash mh.Multihash) Cid {
 	hashlen := len(mhash)
 	// two 8 bytes (max) numbers plus hash
 	buf := make([]byte, 2*binary.MaxVarintLen64+hashlen)
-	n := binary.PutUvarint(buf, version)
+	n := binary.PutUvarint(buf, 1)
 	n += binary.PutUvarint(buf[n:], codecType)
 	cn := copy(buf[n:], mhash)
 	if cn != hashlen {
@@ -280,8 +276,8 @@ func Cast(data []byte) (Cid, error) {
 		return EmptyCid, err
 	}
 
-	if vers != 0 && vers != 1 {
-		return EmptyCid, fmt.Errorf("invalid cid version number: %d", vers)
+	if vers != 1 {
+		return EmptyCid, fmt.Errorf("expected 1 as the cid version number, got: %d", vers)
 	}
 
 	_, cn := binary.Uvarint(data[n:])
@@ -300,12 +296,17 @@ func Cast(data []byte) (Cid, error) {
 
 // Version returns the Cid version.
 func (c Cid) Version() uint64 {
-	v, _ := binary.Uvarint([]byte(c))
-	return v
+	if len(c) == 34 && c[0] == 18 && c[1] == 32 {
+		return 0
+	}
+	return 1
 }
 
 // Type returns the multicodec-packed content type of a Cid.
 func (c Cid) Type() uint64 {
+	if c.Version() == 0 {
+		return DagProtobuf
+	}
 	bytes := []byte(c)
 	_, n := binary.Uvarint(bytes)
 	codec, _ := binary.Uvarint(bytes[n:])
@@ -320,7 +321,7 @@ func (c Cid) String() string {
 	case 0:
 		return c.Hash().B58String()
 	case 1:
-		mbstr, err := mbase.Encode(mbase.Base58BTC, c.bytesV1())
+		mbstr, err := mbase.Encode(mbase.Base58BTC, c.Bytes())
 		if err != nil {
 			panic("should not error with hardcoded mbase: " + err.Error())
 		}
@@ -341,7 +342,7 @@ func (c Cid) StringOfBase(base mbase.Encoding) (string, error) {
 		}
 		return c.Hash().B58String(), nil
 	case 1:
-		return mbase.Encode(base, c.bytesV1())
+		return mbase.Encode(base, c.Bytes())
 	default:
 		panic("not possible to reach this point")
 	}
@@ -355,7 +356,7 @@ func (c Cid) Encode(base mbase.Encoder) string {
 	case 0:
 		return c.Hash().B58String()
 	case 1:
-		return base.Encode(c.bytesV1())
+		return base.Encode(c.Bytes())
 	default:
 		panic("not possible to reach this point")
 	}
@@ -363,6 +364,10 @@ func (c Cid) Encode(base mbase.Encoder) string {
 
 // Hash returns the multihash contained by a Cid.
 func (c Cid) Hash() mh.Multihash {
+	if c.Version() == 0 {
+		return mh.Multihash([]byte(c))
+	}
+
 	bytes := []byte(c)
 	// skip version length
 	_, n1 := binary.Uvarint(bytes)
@@ -376,21 +381,6 @@ func (c Cid) Hash() mh.Multihash {
 // The output of bytes can be parsed back into a Cid
 // with Cast().
 func (c Cid) Bytes() []byte {
-	switch c.Version() {
-	case 0:
-		return c.bytesV0()
-	case 1:
-		return c.bytesV1()
-	default:
-		panic("not possible to reach this point")
-	}
-}
-
-func (c Cid) bytesV0() []byte {
-	return []byte(c.Hash())
-}
-
-func (c Cid) bytesV1() []byte {
 	return []byte(c)
 }
 
@@ -438,7 +428,7 @@ func (c Cid) MarshalJSON() ([]byte, error) {
 	return []byte(fmt.Sprintf("{\"/\":\"%s\"}", c.String())), nil
 }
 
-// KeyString casts the result of cid.Bytes() as a string, and returns it.
+// KeyString returns the binary representation of the Cid as a string
 func (c Cid) KeyString() string {
 	return string(c)
 }
