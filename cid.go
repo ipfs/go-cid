@@ -165,19 +165,7 @@ func newCid(version, codecType uint64, mhash mh.Multihash) Cid {
 // - hash mh.Multihash
 type Cid string
 
-var EmptyCid = Cid(string([]byte{}))
-
-func (c Cid) version() uint64 {
-	v, _ := binary.Uvarint([]byte(c))
-	return v
-}
-
-func (c Cid) codec() uint64 {
-	bytes := []byte(c)
-	_, n := binary.Uvarint(bytes)
-	codec, _ := binary.Uvarint(bytes[n:])
-	return codec
-}
+var EmptyCid = Cid("")
 
 // Parse is a short-hand function to perform Decode, Cast etc... on
 // a generic interface{} type.
@@ -310,16 +298,25 @@ func Cast(data []byte) (Cid, error) {
 	return Cid(data[0 : n+cn+len(h)]), nil
 }
 
+// Version returns the Cid version.
+func (c Cid) Version() uint64 {
+	v, _ := binary.Uvarint([]byte(c))
+	return v
+}
+
 // Type returns the multicodec-packed content type of a Cid.
 func (c Cid) Type() uint64 {
-	return c.codec()
+	bytes := []byte(c)
+	_, n := binary.Uvarint(bytes)
+	codec, _ := binary.Uvarint(bytes[n:])
+	return codec
 }
 
 // String returns the default string representation of a
 // Cid. Currently, Base58 is used as the encoding for the
 // multibase string.
 func (c Cid) String() string {
-	switch c.version() {
+	switch c.Version() {
 	case 0:
 		return c.Hash().B58String()
 	case 1:
@@ -337,7 +334,7 @@ func (c Cid) String() string {
 // String returns the string representation of a Cid
 // encoded is selected base
 func (c Cid) StringOfBase(base mbase.Encoding) (string, error) {
-	switch c.version() {
+	switch c.Version() {
 	case 0:
 		if base != mbase.Base58BTC {
 			return "", ErrInvalidEncoding
@@ -354,7 +351,7 @@ func (c Cid) StringOfBase(base mbase.Encoding) (string, error) {
 // when applicable.  Version 0 Cid's are always in Base58 as they do
 // not take a multibase prefix.
 func (c Cid) Encode(base mbase.Encoder) string {
-	switch c.version() {
+	switch c.Version() {
 	case 0:
 		return c.Hash().B58String()
 	case 1:
@@ -379,7 +376,7 @@ func (c Cid) Hash() mh.Multihash {
 // The output of bytes can be parsed back into a Cid
 // with Cast().
 func (c Cid) Bytes() []byte {
-	switch c.version() {
+	switch c.Version() {
 	case 0:
 		return c.bytesV0()
 	case 1:
@@ -401,8 +398,7 @@ func (c Cid) bytesV1() []byte {
 // In order for two Cids to be considered equal, the
 // Version, the Codec and the Multihash must match.
 func (c Cid) Equals(o Cid) bool {
-	// TODO: can we use regular string equality?
-	return bytes.Equal([]byte(c), []byte(o))
+	return c == o
 }
 
 // UnmarshalJSON parses the JSON representation of a Cid.
@@ -461,8 +457,8 @@ func (c Cid) Prefix() Prefix {
 	return Prefix{
 		MhType:   dec.Code,
 		MhLength: dec.Length,
-		Version:  c.version(),
-		Codec:    c.codec(),
+		Version:  c.Version(),
+		Codec:    c.Type(),
 	}
 }
 

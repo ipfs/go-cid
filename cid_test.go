@@ -38,11 +38,11 @@ var tCodecs = map[uint64]string{
 }
 
 func assertEqual(t *testing.T, a, b Cid) {
-	if a.codec() != b.codec() {
+	if a.Type() != b.Type() {
 		t.Fatal("mismatch on type")
 	}
 
-	if a.version() != b.version() {
+	if a.Version() != b.Version() {
 		t.Fatal("mismatch on version")
 	}
 
@@ -171,7 +171,7 @@ func TestV0Handling(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if cid.version() != 0 {
+	if cid.Version() != 0 {
 		t.Fatal("should have gotten version 0 cid")
 	}
 
@@ -341,8 +341,8 @@ func TestParse(t *testing.T) {
 		if err != nil {
 			return err
 		}
-		if cid.version() != 0 {
-			return fmt.Errorf("expected version 0, got %s", string(cid.version()))
+		if cid.Version() != 0 {
+			return fmt.Errorf("expected version 0, got %s", string(cid.Version()))
 		}
 		actual := cid.Hash().B58String()
 		if actual != expected {
@@ -443,25 +443,6 @@ func BenchmarkStringV1(b *testing.B) {
 		count += len(cid.String())
 	}
 	if count != 49*b.N {
-		b.FailNow()
-	}
-}
-
-// making sure we don't allocate when returning bytes
-func BenchmarkBytesV1(b *testing.B) {
-	data := []byte("this is some test content")
-	hash, _ := mh.Sum(data, mh.SHA2_256, -1)
-	cid := NewCidV1(Raw, hash)
-
-	b.ReportAllocs()
-	b.ResetTimer()
-
-	count := 0
-	for i := 0; i < b.N; i++ {
-		count += len(cid.Bytes())
-		count += len([]byte(cid))
-	}
-	if count != 36*2*b.N {
 		b.FailNow()
 	}
 }
