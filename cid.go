@@ -133,7 +133,7 @@ var CodecToStr = map[uint64]string{
 // compatibility with the plain-multihash format used used in IPFS.
 // NewCidV1 should be used preferentially.
 func NewCidV0(mhash mh.Multihash) Cid {
-	return Cid(mhash)
+	return Cid{string(mhash)}
 }
 
 // NewCidV1 returns a new Cid using the given multicodec-packed
@@ -149,7 +149,7 @@ func NewCidV1(codecType uint64, mhash mh.Multihash) Cid {
 		panic("copy hash length is inconsistent")
 	}
 
-	return Cid(buf[:n+hashlen])
+	return Cid{string(buf[:n+hashlen])}
 }
 
 // Cid represents a self-describing content adressed
@@ -159,9 +159,9 @@ func NewCidV1(codecType uint64, mhash mh.Multihash) Cid {
 // - version uvarint
 // - codec uvarint
 // - hash mh.Multihash
-type Cid string
+type Cid struct{ string }
 
-var Nil = Cid("")
+var Nil = Cid{}
 
 // Parse is a short-hand function to perform Decode, Cast etc... on
 // a generic interface{} type.
@@ -291,12 +291,12 @@ func Cast(data []byte) (Cid, error) {
 		return Nil, err
 	}
 
-	return Cid(data[0 : n+cn+len(h)]), nil
+	return Cid{string(data[0 : n+cn+len(h)])}, nil
 }
 
 // Version returns the Cid version.
 func (c Cid) Version() uint64 {
-	if len(c) == 34 && c[0] == 18 && c[1] == 32 {
+	if len(c.string) == 34 && c.string[0] == 18 && c.string[1] == 32 {
 		return 0
 	}
 	return 1
@@ -307,7 +307,7 @@ func (c Cid) Type() uint64 {
 	if c.Version() == 0 {
 		return DagProtobuf
 	}
-	bytes := []byte(c)
+	bytes := c.Bytes()
 	_, n := binary.Uvarint(bytes)
 	codec, _ := binary.Uvarint(bytes[n:])
 	return codec
@@ -364,11 +364,12 @@ func (c Cid) Encode(base mbase.Encoder) string {
 
 // Hash returns the multihash contained by a Cid.
 func (c Cid) Hash() mh.Multihash {
+	bytes := c.Bytes()
+
 	if c.Version() == 0 {
-		return mh.Multihash([]byte(c))
+		return mh.Multihash(bytes)
 	}
 
-	bytes := []byte(c)
 	// skip version length
 	_, n1 := binary.Uvarint(bytes)
 	// skip codec length
@@ -381,7 +382,7 @@ func (c Cid) Hash() mh.Multihash {
 // The output of bytes can be parsed back into a Cid
 // with Cast().
 func (c Cid) Bytes() []byte {
-	return []byte(c)
+	return []byte(c.string)
 }
 
 // Equals checks that two Cids are the same.
@@ -413,7 +414,7 @@ func (c *Cid) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
-	*c = out[:]
+	*c = Cid{out.string[:]}
 
 	return nil
 }
@@ -430,7 +431,7 @@ func (c Cid) MarshalJSON() ([]byte, error) {
 
 // KeyString returns the binary representation of the Cid as a string
 func (c Cid) KeyString() string {
-	return string(c)
+	return c.string
 }
 
 // Loggable returns a Loggable (as defined by

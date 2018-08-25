@@ -56,7 +56,7 @@ func (s *Set) Visit(c Cid) bool {
 // Cid in the set.
 func (s *Set) ForEach(f func(c Cid) error) error {
 	for cs := range s.set {
-		c, _ := Cast([]byte(cs))
+		c, _ := Cast(cs.Bytes())
 		err := f(c)
 		if err != nil {
 			return err
