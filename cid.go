@@ -414,7 +414,7 @@ func (c *Cid) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
-	*c = Cid{out.string[:]}
+	*c = out
 
 	return nil
 }
