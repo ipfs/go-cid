@@ -27,6 +27,7 @@ There are quite a few different ways to go:
 - Option C: CIDs as an interface with multiple implementors.
 - Option D: CIDs as a struct; multihash also as a struct or string.
 - Option E: CIDs as a struct; content as strings plus offsets.
+- Option F: CIDs as a struct wrapping only a string.
 
 The current approach on the master branch is Option A.
 
@@ -41,6 +42,10 @@ Option E is distinctive from Option D because Option E would always maintain
 the binary format of the cid internally, and so could yield it again without
 malloc, while still potentially having faster access to components than
 Option B since it wouldn't need to re-parse varints to access later fields.
+
+Option F is actually a varation of Option B; it's distinctive from the other
+struct options because it is proposing *literally* `struct{ x string }` as
+the type, with no additional fields for components nor offsets.
 
 Option C is the avoid-choices choice, but note that interfaces are not free;
 since "minimize mallocs" is one of our major goals, we cannot use interfaces
@@ -72,6 +77,7 @@ When using `*Cid`, the nil value is a clear sentinel for 'invalid';
 when using `type Cid string`, the zero value is a clear sentinel;
 when using `type Cid struct` per Option A or D... the only valid check is
 for a nil multihash field, since version=0 and codec=0 are both valid values.
+When using `type Cid struct{string}` per Option F, zero is a clear sentinel.
 
 ### usability as a map key is important
 
@@ -82,6 +88,7 @@ We already covered this in the criteria section, but for clarity:
 - Option C: ~ (caveats, and depends on concrete impl)
 - Option D: ✔
 - Option E: ✔
+- Option F: ✔
 
 ### living without offsets requires parsing
 
@@ -106,7 +113,7 @@ How much this overhead is significant is hard to say from microbenchmarking;
 it depends largely on usage patterns. If these traversals are a significant
 timesink, it would be an argument for Option D/E.
 If these traversals are *not* a significant timesink, we might be wiser
-to keep to Option B, because keeping a struct full of offsets will add several
+to keep to Option B/F, because keeping a struct full of offsets will add several
 words of memory usage per CID, and we keep a *lot* of CIDs.
 
 ### interfaces cause boxing which is a significant performance cost
@@ -128,6 +135,23 @@ This is not a general inditement against using interfaces -- but
 if a situation is at the scale where it's become important to mind whether
 or not pointers are a performance impact, then that situation also
 is one where you have to think twice before using interfaces.
+
+### struct wrappers can be used in place of typedefs with zero overhead
+
+See `TestSizeOf`.
+
+Using the `unsafe.Sizeof` feature to inspect what the Go runtime thinks,
+we can see that `type Foo string` and `type Foo struct{x string}` consume
+precisely the same amount of memory.
+
+This is interesting because it means we can choose between either
+type definition with no significant overhead anywhere we use it:
+thus, we can choose freely between Option B and Option F based on which
+we feel is more pleasant to work with.
+
+Option F (a struct wrapper) means we can prevent casting into our Cid type.
+Option B (typedef string) can be declared a `const`.
+Are there any other concerns that would separate the two choices?
 
 ### one way or another: let's get rid of that star
 
