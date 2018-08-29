@@ -29,6 +29,7 @@ import (
 
 	mbase "github.com/multiformats/go-multibase"
 	mh "github.com/multiformats/go-multihash"
+	strbinary "github.com/multiformats/go-multihash/strbinary"
 )
 
 // UnsupportedVersionString just holds an error message
@@ -133,18 +134,18 @@ var CodecToStr = map[uint64]string{
 // compatibility with the plain-multihash format used used in IPFS.
 // NewCidV1 should be used preferentially.
 func NewCidV0(mhash mh.Multihash) Cid {
-	return Cid{string(mhash)}
+	return Cid{mhash.Binary()}
 }
 
 // NewCidV1 returns a new Cid using the given multicodec-packed
 // content type.
 func NewCidV1(codecType uint64, mhash mh.Multihash) Cid {
-	hashlen := len(mhash)
+	hashlen := len(mhash.Binary())
 	// two 8 bytes (max) numbers plus hash
 	buf := make([]byte, 2*binary.MaxVarintLen64+hashlen)
 	n := binary.PutUvarint(buf, 1)
 	n += binary.PutUvarint(buf[n:], codecType)
-	cn := copy(buf[n:], mhash)
+	cn := copy(buf[n:], mhash.Binary())
 	if cn != hashlen {
 		panic("copy hash length is inconsistent")
 	}
@@ -291,12 +292,12 @@ func Cast(data []byte) (Cid, error) {
 	}
 
 	rest := data[n+cn:]
-	h, err := mh.Cast(rest)
+	_, err := mh.FromBinary(string(rest))
 	if err != nil {
 		return Nil, err
 	}
 
-	return Cid{string(data[0 : n+cn+len(h)])}, nil
+	return Cid{string(data)}, nil
 }
 
 // Version returns the Cid version.
@@ -312,8 +313,7 @@ func (c Cid) Type() uint64 {
 	if c.Version() == 0 {
 		return DagProtobuf
 	}
-	_, n := uvarint(c.str)
-	codec, _ := uvarint(c.str[n:])
+	codec, _ := strbinary.Uvarint(c.str[1:])
 	return codec
 }
 
@@ -368,18 +368,18 @@ func (c Cid) Encode(base mbase.Encoder) string {
 
 // Hash returns the multihash contained by a Cid.
 func (c Cid) Hash() mh.Multihash {
-	bytes := c.Bytes()
-
 	if c.Version() == 0 {
-		return mh.Multihash(bytes)
+		h, _ := mh.FromBinary(c.str)
+		return h
 	}
 
-	// skip version length
-	_, n1 := binary.Uvarint(bytes)
-	// skip codec length
-	_, n2 := binary.Uvarint(bytes[n1:])
+	// Skip 1 byte for the version prefix
+	i := 1
+	// Skip the Codec prefix
+	i += strbinary.UvarintLen(c.str[i:])
 
-	return mh.Multihash(bytes[n1+n2:])
+	h, _ := mh.FromBinary(c.str[i:])
+	return h
 }
 
 // Bytes returns the byte representation of a Cid.
@@ -448,10 +448,10 @@ func (c Cid) Loggable() map[string]interface{} {
 
 // Prefix builds and returns a Prefix out of a Cid.
 func (c Cid) Prefix() Prefix {
-	dec, _ := mh.Decode(c.Hash()) // assuming we got a valid multiaddr, this will not error
+	mhType, digest := c.Hash().Parts()
 	return Prefix{
-		MhType:   dec.Code,
-		MhLength: dec.Length,
+		MhType:   mhType,
+		MhLength: len(digest),
 		Version:  c.Version(),
 		Codec:    c.Type(),
 	}
