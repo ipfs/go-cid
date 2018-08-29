@@ -161,7 +161,16 @@ func NewCidV1(codecType uint64, mhash mh.Multihash) Cid {
 // - hash mh.Multihash
 type Cid struct{ str string }
 
+// Nil can be used to represent a nil Cid, using Cid{} directly is
+// also acceptable.
 var Nil = Cid{}
+
+// Nil returns true if a Cid is uninitialized or the Nil value.
+// Calling any other methods on an uninitialized Cid will result in
+// undefined behavior.
+func (c Cid) IsNil() bool {
+	return c.str == ""
+}
 
 // Parse is a short-hand function to perform Decode, Cast etc... on
 // a generic interface{} type.
