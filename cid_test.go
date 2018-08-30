@@ -152,6 +152,15 @@ func TestBasesMarshaling(t *testing.T) {
 		}
 
 		assertEqual(t, cid, out2)
+
+		encoder, err := mbase.NewEncoder(b)
+		if err != nil {
+			t.Fatal(err)
+		}
+		s2 := cid.Encode(encoder)
+		if s != s2 {
+			t.Fatalf("'%s' != '%s'", s, s2)
+		}
 	}
 }
 
@@ -180,6 +189,22 @@ func TestV0Handling(t *testing.T) {
 
 	if cid.String() != old {
 		t.Fatal("marshaling roundtrip failed")
+	}
+
+	new, err := cid.StringOfBase(mbase.Base58BTC)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if new != old {
+		t.Fatal("StringOfBase roundtrip failed")
+	}
+
+	encoder, err := mbase.NewEncoder(mbase.Base58BTC)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cid.Encode(encoder) != old {
+		t.Fatal("Encode roundtrip failed")
 	}
 }
 

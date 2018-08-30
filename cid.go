@@ -338,6 +338,20 @@ func (c *Cid) StringOfBase(base mbase.Encoding) (string, error) {
 	}
 }
 
+// Encode return the string representation of a Cid in a given base
+// when applicable.  Version 0 Cid's are always in Base58 as they do
+// not take a multibase prefix.
+func (c *Cid) Encode(base mbase.Encoder) string {
+	switch c.version {
+	case 0:
+		return c.hash.B58String()
+	case 1:
+		return base.Encode(c.bytesV1())
+	default:
+		panic("not possible to reach this point")
+	}
+}
+
 // Hash returns the multihash contained by a Cid.
 func (c *Cid) Hash() mh.Multihash {
 	return c.hash
