@@ -339,7 +339,8 @@ func (c *Cid) StringOfBase(base mbase.Encoding) (string, error) {
 }
 
 // Encode return the string representation of a Cid in a given base
-// when applicable
+// when applicable.  Version 0 Cid's are always in Base58 as they do
+// not take a multibase prefix.
 func (c *Cid) Encode(base mbase.Encoder) string {
 	switch c.version {
 	case 0:
