@@ -312,6 +312,17 @@ func Test16BytesVarint(t *testing.T) {
 	_ = c.Bytes()
 }
 
+func TestEqual(t *testing.T) {
+	data := []byte("this is some test content")
+	hash, _ := mh.Sum(data, mh.SHA2_256, -1)
+	c := NewCidV1(DagCBOR, hash)
+
+	var cNil *Cid
+	if c.Equals(cNil) || cNil.Equals(c) || cNil.Equals(cNil) {
+		t.Fatal("expected nil CIDs to equal nothing")
+	}
+}
+
 func TestFuzzCid(t *testing.T) {
 	buf := make([]byte, 128)
 	for i := 0; i < 200; i++ {

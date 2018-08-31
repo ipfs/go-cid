@@ -392,6 +392,12 @@ func (c *Cid) bytesV1() []byte {
 // In order for two Cids to be considered equal, the
 // Version, the Codec and the Multihash must match.
 func (c *Cid) Equals(o *Cid) bool {
+	if c == nil || o == nil {
+		return false
+	}
+	if c == o {
+		return true
+	}
 	return c.codec == o.codec &&
 		c.version == o.version &&
 		bytes.Equal(c.hash, o.hash)
