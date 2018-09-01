@@ -55,8 +55,7 @@ func (s *Set) Visit(c Cid) bool {
 // ForEach allows to run a custom function on each
 // Cid in the set.
 func (s *Set) ForEach(f func(c Cid) error) error {
-	for cs := range s.set {
-		c, _ := Cast(cs.Bytes())
+	for c := range s.set {
 		err := f(c)
 		if err != nil {
 			return err
@@ -64,4 +63,3 @@ func (s *Set) ForEach(f func(c Cid) error) error {
 	}
 	return nil
 }
-
