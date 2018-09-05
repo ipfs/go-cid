@@ -161,11 +161,11 @@ type Cid struct{ str string }
 // also acceptable.
 var Nil = Cid{}
 
-// Nil returns true if a Cid is uninitialized or the Nil value.
-// Calling any other methods on an uninitialized Cid will result in
+// Defined returns true if a Cid is defined
+// Calling any other methods on an undefined Cid will result in
 // undefined behavior.
-func (c Cid) IsNil() bool {
-	return c.str == ""
+func (c Cid) Defined() bool {
+	return c.str != ""
 }
 
 // Parse is a short-hand function to perform Decode, Cast etc... on
