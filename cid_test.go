@@ -1,7 +1,6 @@
 package cid
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"math/rand"
@@ -46,7 +45,7 @@ func assertEqual(t *testing.T, a, b Cid) {
 		t.Fatal("mismatch on version")
 	}
 
-	if !bytes.Equal(a.Hash(), b.Hash()) {
+	if a.Hash() != b.Hash() {
 		t.Fatal("multihash mismatch")
 	}
 }
