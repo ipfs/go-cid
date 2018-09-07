@@ -404,9 +404,14 @@ func (c *Cid) UnmarshalJSON(b []byte) error {
 	obj := struct {
 		CidTarget string `json:"/"`
 	}{}
-	err := json.Unmarshal(b, &obj)
+	objptr := &obj
+	err := json.Unmarshal(b, &objptr)
 	if err != nil {
 		return err
+	}
+	if objptr == nil {
+		*c = Cid{}
+		return nil
 	}
 
 	if obj.CidTarget == "" {
@@ -430,6 +435,9 @@ func (c *Cid) UnmarshalJSON(b []byte) error {
 // Note that this formatting comes from the IPLD specification
 // (https://github.com/ipld/specs/tree/master/ipld)
 func (c Cid) MarshalJSON() ([]byte, error) {
+	if !c.Defined() {
+		return []byte("null"), nil
+	}
 	return []byte(fmt.Sprintf("{\"/\":\"%s\"}", c.String())), nil
 }
 
