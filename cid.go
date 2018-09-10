@@ -133,6 +133,15 @@ var CodecToStr = map[uint64]string{
 // compatibility with the plain-multihash format used used in IPFS.
 // NewCidV1 should be used preferentially.
 func NewCidV0(mhash mh.Multihash) Cid {
+	// Need to make sure hash is valid for CidV0 otherwise we will
+	// incorrectly detect it as CidV1 in the Version() method
+	dec, err := mh.Decode(mhash)
+	if err != nil {
+		panic(err)
+	}
+	if dec.Code != mh.SHA2_256 || dec.Length != 32 {
+		panic("invalid hash for cidv0")
+	}
 	return Cid{string(mhash)}
 }
 
