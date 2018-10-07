@@ -79,6 +79,8 @@ const (
 	ZcashTx            = 0xc1
 	DecredBlock        = 0xe0
 	DecredTx           = 0xe1
+	DashBlock          = 0xf0
+	DashTx             = 0xf1
 )
 
 // Codecs maps the name of a codec to its type
@@ -103,6 +105,8 @@ var Codecs = map[string]uint64{
 	"zcash-tx":             ZcashTx,
 	"decred-block":         DecredBlock,
 	"decred-tx":            DecredTx,
+	"dash-block":           DashBlock,
+	"dash-tx":              DashTx,
 }
 
 // CodecToStr maps the numeric codec to its name
@@ -126,6 +130,8 @@ var CodecToStr = map[uint64]string{
 	ZcashTx:            "zcash-tx",
 	DecredBlock:        "decred-block",
 	DecredTx:           "decred-tx",
+	DashBlock:          "dash-block",
+	DashTx:             "dash-tx",
 }
 
 // NewCidV0 returns a Cid-wrapped multihash.
