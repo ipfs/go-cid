@@ -167,7 +167,7 @@ func NewCidV1(codecType uint64, mhash mh.Multihash) Cid {
 	return Cid{string(buf[:n+hashlen])}
 }
 
-// Cid represents a self-describing content adressed
+// Cid represents a self-describing content addressed
 // identifier. It is formed by a Version, a Codec (which indicates
 // a multicodec-packed content type) and a Multihash.
 type Cid struct{ str string }
