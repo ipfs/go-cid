@@ -158,6 +158,44 @@ func TestBasesMarshaling(t *testing.T) {
 	}
 }
 
+func TestBinaryMarshaling(t *testing.T) {
+	data := []byte("this is some test content")
+	hash, _ := mh.Sum(data, mh.SHA2_256, -1)
+	c := NewCidV1(DagCBOR, hash)
+	var c2 Cid
+
+	data, err := c.MarshalBinary()
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = c2.UnmarshalBinary(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !c.Equals(c2) {
+		t.Errorf("cids should be the same: %s %s", c, c2)
+	}
+}
+
+func TestTextMarshaling(t *testing.T) {
+	data := []byte("this is some test content")
+	hash, _ := mh.Sum(data, mh.SHA2_256, -1)
+	c := NewCidV1(DagCBOR, hash)
+	var c2 Cid
+
+	data, err := c.MarshalText()
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = c2.UnmarshalText(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !c.Equals(c2) {
+		t.Errorf("cids should be the same: %s %s", c, c2)
+	}
+}
+
 func TestEmptyString(t *testing.T) {
 	_, err := Decode("")
 	if err == nil {
