@@ -73,6 +73,34 @@ func TestTableForV0(t *testing.T) {
 	}
 }
 
+func TestPrefixSum(t *testing.T) {
+	// Test creating CIDs both manually and with Prefix.
+	// Tests: https://github.com/ipfs/go-cid/issues/83
+	for _, hashfun := range []uint64{
+		mh.ID, mh.SHA3, mh.SHA2_256,
+	} {
+		h1, err := mh.Sum([]byte("TEST"), hashfun, -1)
+		if err != nil {
+			t.Fatal(err)
+		}
+		c1 := NewCidV1(Raw, h1)
+
+		h2, err := mh.Sum([]byte("foobar"), hashfun, -1)
+		if err != nil {
+			t.Fatal(err)
+		}
+		c2 := NewCidV1(Raw, h2)
+
+		c3, err := c1.Prefix().Sum([]byte("foobar"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !c2.Equals(c3) {
+			t.Fatal("expected CIDs to be equal")
+		}
+	}
+}
+
 func TestBasicMarshaling(t *testing.T) {
 	h, err := mh.Sum([]byte("TEST"), mh.SHA3, 4)
 	if err != nil {
