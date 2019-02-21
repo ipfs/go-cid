@@ -536,7 +536,12 @@ type Prefix struct {
 // Sum uses the information in a prefix to perform a multihash.Sum()
 // and return a newly constructed Cid with the resulting multihash.
 func (p Prefix) Sum(data []byte) (Cid, error) {
-	hash, err := mh.Sum(data, p.MhType, p.MhLength)
+	length := p.MhLength
+	if p.MhType == mh.ID {
+		length = -1
+	}
+
+	hash, err := mh.Sum(data, p.MhType, length)
 	if err != nil {
 		return Undef, err
 	}
