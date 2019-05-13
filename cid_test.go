@@ -438,13 +438,13 @@ func TestHexDecode(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if c.String() != "zb2rhhFAEMepUBbGyP1k8tGfz7BSciKXP6GHuUeUsJBaK6cqG" {
+	if c.String() != "bafkreie5qrjvaw64n4tjm6hbnm7fnqvcssfed4whsjqxzslbd3jwhsk3mm" {
 		t.Fatal("hash value failed to round trip decoding from hex")
 	}
 }
 
 func ExampleDecode() {
-	encoded := "zb2rhhFAEMepUBbGyP1k8tGfz7BSciKXP6GHuUeUsJBaK6cqG"
+	encoded := "bafkreie5qrjvaw64n4tjm6hbnm7fnqvcssfed4whsjqxzslbd3jwhsk3mm"
 	c, err := Decode(encoded)
 	if err != nil {
 		fmt.Printf("Error: %s", err)
@@ -452,11 +452,11 @@ func ExampleDecode() {
 	}
 
 	fmt.Println(c)
-	// Output: zb2rhhFAEMepUBbGyP1k8tGfz7BSciKXP6GHuUeUsJBaK6cqG
+	// Output: bafkreie5qrjvaw64n4tjm6hbnm7fnqvcssfed4whsjqxzslbd3jwhsk3mm
 }
 
 func TestFromJson(t *testing.T) {
-	cval := "zb2rhhFAEMepUBbGyP1k8tGfz7BSciKXP6GHuUeUsJBaK6cqG"
+	cval := "bafkreie5qrjvaw64n4tjm6hbnm7fnqvcssfed4whsjqxzslbd3jwhsk3mm"
 	jsoncid := []byte(`{"/":"` + cval + `"}`)
 	var c Cid
 	err := json.Unmarshal(jsoncid, &c)
@@ -470,7 +470,7 @@ func TestFromJson(t *testing.T) {
 }
 
 func TestJsonRoundTrip(t *testing.T) {
-	exp, err := Decode("zb2rhhFAEMepUBbGyP1k8tGfz7BSciKXP6GHuUeUsJBaK6cqG")
+	exp, err := Decode("bafkreie5qrjvaw64n4tjm6hbnm7fnqvcssfed4whsjqxzslbd3jwhsk3mm")
 	if err != nil {
 		t.Fatal(err)
 	}
