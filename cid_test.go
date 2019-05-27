@@ -19,6 +19,7 @@ var tCodecs = map[uint64]string{
 	Raw:                "raw",
 	DagProtobuf:        "protobuf",
 	DagCBOR:            "cbor",
+	Libp2pKey:          "libp2p-key",
 	GitRaw:             "git-raw",
 	EthBlock:           "eth-block",
 	EthBlockList:       "eth-block-list",
