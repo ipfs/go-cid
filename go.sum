@@ -14,6 +14,10 @@ github.com/multiformats/go-multibase v0.0.1 h1:PN9/v21eLywrFWdFNsFKaU04kLJzuYzmr
 github.com/multiformats/go-multibase v0.0.1/go.mod h1:bja2MqRZ3ggyXtZSEDKpl0uO/gviWFaSteVbWT51qgs=
 github.com/multiformats/go-multihash v0.0.1 h1:HHwN1K12I+XllBCrqKnhX949Orn4oawPkegHMu2vDqQ=
 github.com/multiformats/go-multihash v0.0.1/go.mod h1:w/5tugSrLEbWqlcgJabL3oHFKTwfvkofsjW2Qa1ct4U=
+github.com/whyrusleeping/cbor-gen v0.0.0-20190818214716-81392149d1dd h1:Nj8P2Fg3mRVnBfkNnxZK+QhjwCxI3kLng2nfTTLIudk=
+github.com/whyrusleeping/cbor-gen v0.0.0-20190818214716-81392149d1dd/go.mod h1:ga0xb76iSIPvNNiuR+g3+c3Rnwy0oVuBGvqDwsEV6x4=
+github.com/whyrusleeping/cbor-gen v0.0.0-20190819235733-17c06ddc16cb h1:49o2mhJ/B2nsmSjV4fUsrFEoKGM9NLWQSnk+YrAKFLg=
+github.com/whyrusleeping/cbor-gen v0.0.0-20190819235733-17c06ddc16cb/go.mod h1:ga0xb76iSIPvNNiuR+g3+c3Rnwy0oVuBGvqDwsEV6x4=
 golang.org/x/crypto v0.0.0-20190211182817-74369b46fc67 h1:ng3VDlRp5/DHpSWl02R4rM9I+8M2rhmsuLwAMmkLQWE=
 golang.org/x/crypto v0.0.0-20190211182817-74369b46fc67/go.mod h1:6SG95UA2DQfeDnfUPMdvaQW0Q7yPrPDi9nlGo2tz2b4=
 golang.org/x/sys v0.0.0-20190219092855-153ac476189d h1:Z0Ahzd7HltpJtjAHHxX8QFP3j1yYgiuvjbjRzDj/KH0=

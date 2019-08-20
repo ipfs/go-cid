@@ -2,6 +2,7 @@ package cid
 
 import (
 	"bytes"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"math/rand"
@@ -496,6 +497,77 @@ func TestJsonRoundTrip(t *testing.T) {
 	err = json.Unmarshal(enc, &actual2)
 	if !exp.Equals(actual2) {
 		t.Fatal("cids not equal for Cid")
+	}
+}
+
+func TestCBORSerialization(t *testing.T) {
+	cases := map[string]string{
+		"bafybeibpzhw63c3vh7vushzvfzvkc2nbhr6nm3ui2o7kj33cx3xoovnzp4": "d82a582500017012202fc9eded8b753feb491f352e6aa169a13c7cd66e88d3bea4ef62beeee755b97f",
+		"QmRZCTZPygAnfagZKzjy48b4LMmqPNpJnNBEg5LtCCzHCA":              "d82a58230012202fc9eded8b753feb491f352e6aa169a13c7cd66e88d3bea4ef62beeee755b97f",
+	}
+
+	for cs, encs := range cases {
+		c, err := Decode(cs)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		buf := new(bytes.Buffer)
+		if err := c.MarshalCBOR(buf); err != nil {
+			t.Fatal(err)
+		}
+
+		exp, err := hex.DecodeString(encs)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if !bytes.Equal(exp, buf.Bytes()) {
+			t.Fatalf("serialization incorrect: %x != %x", buf.Bytes(), exp)
+		}
+
+		var out Cid
+		if err := out.UnmarshalCBOR(bytes.NewReader(exp)); err != nil {
+			t.Fatalf("unmarshal case %s failed: %s", cs, err)
+		}
+
+		if out != c {
+			t.Fatal("unmarshal CBOR failed")
+		}
+	}
+}
+
+func BenchmarkCBORMarshal(b *testing.B) {
+	c, err := Decode("bafybeibpzhw63c3vh7vushzvfzvkc2nbhr6nm3ui2o7kj33cx3xoovnzp4")
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	b.ReportAllocs()
+
+	buf := new(bytes.Buffer)
+	for i := 0; i < b.N; i++ {
+		buf.Reset()
+		if err := c.MarshalCBOR(buf); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+func BenchmarkCBORUnmarshal(b *testing.B) {
+	enc, err := hex.DecodeString("d82a582500017012202fc9eded8b753feb491f352e6aa169a13c7cd66e88d3bea4ef62beeee755b97f")
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	b.ReportAllocs()
+
+	var c Cid
+	for i := 0; i < b.N; i++ {
+		br := bytes.NewReader(enc)
+		if err := c.UnmarshalCBOR(br); err != nil {
+			b.Fatal(err)
+		}
 	}
 }
 
