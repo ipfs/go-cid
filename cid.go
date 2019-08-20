@@ -38,6 +38,8 @@ import (
 // UnsupportedVersionString just holds an error message
 const UnsupportedVersionString = "<unsupported cid version>"
 
+const CidMaxLen = 256
+
 var (
 	// ErrVarintBuffSmall means that a buffer passed to the cid parser was not
 	// long enough, or did not contain an invalid cid
@@ -51,6 +53,10 @@ var (
 	// ErrCidTooShort means that the cid passed to decode was not long
 	// enough to be a valid Cid
 	ErrCidTooShort = errors.New("cid too short")
+
+	// ErrCidTooLong means that the CIDs payload was greater than CidMaxLen
+	// bytes
+	ErrCidTooLong = errors.New("cid too long")
 
 	// ErrInvalidEncoding means that selected encoding is not supported
 	// by this Cid version
@@ -293,6 +299,10 @@ func uvError(read int) error {
 // Please use decode when parsing a regular Cid string, as Cast does not
 // expect multibase-encoded data. Cast accepts the output of Cid.Bytes().
 func Cast(data []byte) (Cid, error) {
+	if len(data) > CidMaxLen {
+		return Undef, ErrCidTooLong
+	}
+
 	if len(data) == 34 && data[0] == 18 && data[1] == 32 {
 		h, err := mh.Cast(data)
 		if err != nil {
@@ -526,12 +536,12 @@ func (c Cid) Prefix() Prefix {
 }
 
 func (c Cid) MarshalCBOR(w io.Writer) error {
-	tag := cbg.CborEncodeMajorType(6, 42)
+	tag := cbg.CborEncodeMajorType(cbg.MajTag, 42)
 	if _, err := w.Write(tag); err != nil {
 		return err
 	}
 
-	typ := cbg.CborEncodeMajorType(2, uint64(len(c.Bytes())+1))
+	typ := cbg.CborEncodeMajorType(cbg.MajByteString, uint64(len(c.Bytes())+1))
 	if _, err := w.Write(typ); err != nil {
 		return err
 	}
@@ -549,16 +559,16 @@ func (c Cid) MarshalCBOR(w io.Writer) error {
 }
 
 func (c *Cid) UnmarshalCBOR(br cbg.ByteReader) error {
-	maj, low, err := cbg.CborReadHeader(br)
+	maj, extra, err := cbg.CborReadHeader(br)
 	if err != nil {
 		return err
 	}
 
-	if maj != 6 || low != 42 {
+	if maj != cbg.MajTag || extra != 42 {
 		return fmt.Errorf("CBOR serialized CIDs must have the tag 42")
 	}
 
-	maj, low, err = cbg.CborReadHeader(br)
+	maj, extra, err = cbg.CborReadHeader(br)
 	if err != nil {
 		return err
 	}
@@ -567,14 +577,15 @@ func (c *Cid) UnmarshalCBOR(br cbg.ByteReader) error {
 		return fmt.Errorf("CBOR serialized CIDs must be tagged byte arrays")
 	}
 
-	if low > 256 {
-		return fmt.Errorf("CIDs cannot be longer than 256 bytes")
-	}
-	if low < 2 {
+	if extra < 2 {
 		return fmt.Errorf("encoded CID body must be at least two bytes long")
 	}
 
-	buf := make([]byte, low)
+	if extra > CidMaxLen+1 {
+		return fmt.Errorf("CIDs cannot be longer than 256 bytes")
+	}
+
+	buf := make([]byte, extra)
 	if _, err := io.ReadFull(br, buf); err != nil {
 		return fmt.Errorf("failed to read CID body: %s", err)
 	}
