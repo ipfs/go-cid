@@ -26,14 +26,19 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"strings"
 
 	mbase "github.com/multiformats/go-multibase"
 	mh "github.com/multiformats/go-multihash"
+
+	cbg "github.com/whyrusleeping/cbor-gen"
 )
 
 // UnsupportedVersionString just holds an error message
 const UnsupportedVersionString = "<unsupported cid version>"
+
+const CidMaxLen = 256
 
 var (
 	// ErrVarintBuffSmall means that a buffer passed to the cid parser was not
@@ -48,6 +53,10 @@ var (
 	// ErrCidTooShort means that the cid passed to decode was not long
 	// enough to be a valid Cid
 	ErrCidTooShort = errors.New("cid too short")
+
+	// ErrCidTooLong means that the CIDs payload was greater than CidMaxLen
+	// bytes
+	ErrCidTooLong = errors.New("cid too long")
 
 	// ErrInvalidEncoding means that selected encoding is not supported
 	// by this Cid version
@@ -290,6 +299,10 @@ func uvError(read int) error {
 // Please use decode when parsing a regular Cid string, as Cast does not
 // expect multibase-encoded data. Cast accepts the output of Cid.Bytes().
 func Cast(data []byte) (Cid, error) {
+	if len(data) > CidMaxLen {
+		return Undef, ErrCidTooLong
+	}
+
 	if len(data) == 34 && data[0] == 18 && data[1] == 32 {
 		h, err := mh.Cast(data)
 		if err != nil {
@@ -520,6 +533,75 @@ func (c Cid) Prefix() Prefix {
 		Version:  c.Version(),
 		Codec:    c.Type(),
 	}
+}
+
+func (c Cid) MarshalCBOR(w io.Writer) error {
+	tag := cbg.CborEncodeMajorType(cbg.MajTag, 42)
+	if _, err := w.Write(tag); err != nil {
+		return err
+	}
+
+	typ := cbg.CborEncodeMajorType(cbg.MajByteString, uint64(len(c.Bytes())+1))
+	if _, err := w.Write(typ); err != nil {
+		return err
+	}
+
+	// that binary multibase prefix...
+	if _, err := w.Write([]byte{0}); err != nil {
+		return err
+	}
+
+	if _, err := w.Write(c.Bytes()); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *Cid) UnmarshalCBOR(br cbg.ByteReader) error {
+	maj, extra, err := cbg.CborReadHeader(br)
+	if err != nil {
+		return err
+	}
+
+	if maj != cbg.MajTag || extra != 42 {
+		return fmt.Errorf("CBOR serialized CIDs must have the tag 42")
+	}
+
+	maj, extra, err = cbg.CborReadHeader(br)
+	if err != nil {
+		return err
+	}
+
+	if maj != 2 {
+		return fmt.Errorf("CBOR serialized CIDs must be tagged byte arrays")
+	}
+
+	if extra < 2 {
+		return fmt.Errorf("encoded CID body must be at least two bytes long")
+	}
+
+	if extra > CidMaxLen+1 {
+		return fmt.Errorf("CIDs cannot be longer than 256 bytes")
+	}
+
+	buf := make([]byte, extra)
+	if _, err := io.ReadFull(br, buf); err != nil {
+		return fmt.Errorf("failed to read CID body: %s", err)
+	}
+
+	if buf[0] != 0 {
+		return fmt.Errorf("encoded CID did not have binary multibase")
+	}
+
+	out, err := Cast(buf[1:])
+	if err != nil {
+		return err
+	}
+
+	*c = out
+
+	return nil
 }
 
 // Prefix represents all the metadata of a Cid,
