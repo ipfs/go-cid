@@ -14,6 +14,9 @@ go-cid
 This is an implementation in Go of the [CID spec](https://github.com/ipld/cid).
 It is used in `go-ipfs` and related packages to refer to a typed hunk of data.
 
+## Lead Maintainer
+
+[Eric Myhre](https://github.com/warpfork)
 
 ## Table of Contents
 
