@@ -117,6 +117,27 @@ if !c.Equals(other) {
 
 ```
 
+#### Create random V0 CIDs to play with and for testing
+
+```
+import (
+	"fmt"
+
+	"github.com/ipfs/go-cid"
+	ipfsUtil "github.com/ipfs/go-ipfs-util"
+)
+
+func main () {
+	var randomCids []cid.Cid
+
+	for i := 0; i < 10; i++ {
+		v := fmt.Sprintf("%d -- some string to spicy things up", i)
+		mhv := ipfsUtil.Hash([]byte(v))
+		randomCids = append(randomCids, cid.NewCidV0(mhv))
+	}
+}
+```
+
 ## Contribute
 
 PRs are welcome!
