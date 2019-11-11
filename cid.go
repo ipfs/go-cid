@@ -543,6 +543,12 @@ func (p Prefix) Sum(data []byte) (Cid, error) {
 		length = -1
 	}
 
+	if p.Version == 0 && (p.MhType != mh.SHA2_256 ||
+		(p.MhLength != 32 && p.MhLength != -1)) {
+
+		return Undef, fmt.Errorf("invalid v0 prefix")
+	}
+
 	hash, err := mh.Sum(data, p.MhType, length)
 	if err != nil {
 		return Undef, err

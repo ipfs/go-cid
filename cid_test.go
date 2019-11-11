@@ -333,6 +333,41 @@ func TestNewPrefixV0(t *testing.T) {
 	if c1.Prefix() != c2.Prefix() {
 		t.Fatal("prefixes mismatch")
 	}
+
+}
+
+func TestInvalidV0Prefix(t *testing.T) {
+	tests := []Prefix{
+		{
+			MhType:   mh.SHA2_256,
+			MhLength: 31,
+		},
+		{
+			MhType:   mh.SHA2_256,
+			MhLength: 33,
+		},
+		{
+			MhType:   mh.SHA2_256,
+			MhLength: -2,
+		},
+		{
+			MhType:   mh.SHA2_512,
+			MhLength: 32,
+		},
+		{
+			MhType:   mh.SHA2_512,
+			MhLength: -1,
+		},
+	}
+
+	for i, p := range tests {
+		t.Log(i)
+		_, err := p.Sum([]byte("testdata"))
+		if err == nil {
+			t.Fatalf("should error (index %d)", i)
+		}
+	}
+
 }
 
 func TestPrefixRoundtrip(t *testing.T) {
