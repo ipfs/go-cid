@@ -610,13 +610,12 @@ func CidFromBytes(data []byte) (int, Cid, error) {
 		return 0, Undef, err
 	}
 
-	mhr := mh.NewReader(bytes.NewReader(data[n+cn:]))
-	h, err := mhr.ReadMultihash()
+	mhnr, _, err := mh.MHFromBytes(data[n+cn:])
 	if err != nil {
 		return 0, Undef, err
 	}
 
-	l := n + cn + len(h)
+	l := n + cn + mhnr
 
 	return l, Cid{string(data[0:l])}, nil
 }
