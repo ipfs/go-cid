@@ -515,3 +515,37 @@ func BenchmarkStringV1(b *testing.B) {
 		b.FailNow()
 	}
 }
+
+func TestReadCidsFromBuffer(t *testing.T) {
+	cidstr := []string{
+		"bafkreie5qrjvaw64n4tjm6hbnm7fnqvcssfed4whsjqxzslbd3jwhsk3mm",
+		"Qmf5Qzp6nGBku7CEn2UQx4mgN8TW69YUok36DrGa6NN893",
+		"zb2rhZi1JR4eNc2jBGaRYJKYM8JEB4ovenym8L1CmFsRAytkz",
+	}
+
+	var cids []Cid
+	var buf []byte
+	for _, cs := range cidstr {
+		c, err := Decode(cs)
+		if err != nil {
+			t.Fatal(err)
+		}
+		cids = append(cids, c)
+		buf = append(buf, c.Bytes()...)
+	}
+
+	var cur int
+	for _, expc := range cids {
+		n, c, err := CidFromBytes(buf[cur:])
+		if err != nil {
+			t.Fatal(err)
+		}
+		if c != expc {
+			t.Fatal("cids mismatched")
+		}
+		cur += n
+	}
+	if cur != len(buf) {
+		t.Fatal("had trailing bytes")
+	}
+}
