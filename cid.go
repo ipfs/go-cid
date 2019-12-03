@@ -603,7 +603,7 @@ func PrefixFromBytes(buf []byte) (Prefix, error) {
 }
 
 func CidFromBytes(data []byte) (int, Cid, error) {
-	if len(data) > 2 && data[0] == 18 && data[1] == 32 {
+	if len(data) > 2 && data[0] == mh.SHA2_256 && data[1] == 32 {
 		if len(data) < 34 {
 			return 0, Undef, fmt.Errorf("not enough bytes for cid v0")
 		}
