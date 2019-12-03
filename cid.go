@@ -613,7 +613,7 @@ func CidFromBytes(data []byte) (int, Cid, error) {
 			return 0, Undef, err
 		}
 
-		return 34, NewCidV0(h), nil
+		return 34, Cid{string(h)}, nil
 	}
 
 	vers, n := binary.Uvarint(data)
