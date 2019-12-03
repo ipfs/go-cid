@@ -584,3 +584,14 @@ func TestReadCidsFromBuffer(t *testing.T) {
 		t.Fatal("had trailing bytes")
 	}
 }
+
+func TestBadParse(t *testing.T) {
+	hash, err := mh.Sum([]byte("foobar"), mh.SHA3_256, -1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = Parse(hash)
+	if err == nil {
+		t.Fatal("expected to fail to parse an invalid CIDv1 CID")
+	}
+}
