@@ -137,25 +137,39 @@ var CodecToStr = map[uint64]string{
 	DashTx:             "dash-tx",
 }
 
-// NewCidV0 returns a Cid-wrapped multihash.
-// They exist to allow IPFS to work with Cids while keeping
-// compatibility with the plain-multihash format used used in IPFS.
-// NewCidV1 should be used preferentially.
-func NewCidV0(mhash mh.Multihash) Cid {
+// tryNewCidV0 tries to convert a multihash into a CIDv0 CID and returns an
+// error on failure.
+func tryNewCidV0(mhash mh.Multihash) (Cid, error) {
 	// Need to make sure hash is valid for CidV0 otherwise we will
 	// incorrectly detect it as CidV1 in the Version() method
 	dec, err := mh.Decode(mhash)
 	if err != nil {
-		panic(err)
+		return Undef, err
 	}
 	if dec.Code != mh.SHA2_256 || dec.Length != 32 {
-		panic("invalid hash for cidv0")
+		return Undef, fmt.Errorf("invalid hash for cidv0 %d-%d", dec.Code, dec.Length)
 	}
-	return Cid{string(mhash)}
+	return Cid{string(mhash)}, nil
+}
+
+// NewCidV0 returns a Cid-wrapped multihash.
+// They exist to allow IPFS to work with Cids while keeping
+// compatibility with the plain-multihash format used used in IPFS.
+// NewCidV1 should be used preferentially.
+//
+// Panics if the multihash isn't sha2-256.
+func NewCidV0(mhash mh.Multihash) Cid {
+	c, err := tryNewCidV0(mhash)
+	if err != nil {
+		panic(err)
+	}
+	return c
 }
 
 // NewCidV1 returns a new Cid using the given multicodec-packed
 // content type.
+//
+// Panics if the multihash is invalid.
 func NewCidV1(codecType uint64, mhash mh.Multihash) Cid {
 	hashlen := len(mhash)
 	// two 8 bytes (max) numbers plus hash
@@ -203,7 +217,7 @@ func Parse(v interface{}) (Cid, error) {
 	case []byte:
 		return Cast(v2)
 	case mh.Multihash:
-		return NewCidV0(v2), nil
+		return tryNewCidV0(v2)
 	case Cid:
 		return v2, nil
 	default:
@@ -234,7 +248,7 @@ func Decode(v string) (Cid, error) {
 			return Undef, err
 		}
 
-		return NewCidV0(hash), nil
+		return tryNewCidV0(hash)
 	}
 
 	_, data, err := mbase.Decode(v)
