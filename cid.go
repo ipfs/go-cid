@@ -22,7 +22,6 @@ package cid
 import (
 	"bytes"
 	"encoding"
-	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -30,21 +29,13 @@ import (
 
 	mbase "github.com/multiformats/go-multibase"
 	mh "github.com/multiformats/go-multihash"
+	varint "github.com/multiformats/go-varint"
 )
 
 // UnsupportedVersionString just holds an error message
 const UnsupportedVersionString = "<unsupported cid version>"
 
 var (
-	// ErrVarintBuffSmall means that a buffer passed to the cid parser was not
-	// long enough, or did not contain an invalid cid
-	ErrVarintBuffSmall = errors.New("reading varint: buffer too small")
-
-	// ErrVarintTooBig means that the varint in the given cid was above the
-	// limit of 2^64
-	ErrVarintTooBig = errors.New("reading varint: varint bigger than 64bits" +
-		" and not supported")
-
 	// ErrCidTooShort means that the cid passed to decode was not long
 	// enough to be a valid Cid
 	ErrCidTooShort = errors.New("cid too short")
@@ -173,9 +164,9 @@ func NewCidV0(mhash mh.Multihash) Cid {
 func NewCidV1(codecType uint64, mhash mh.Multihash) Cid {
 	hashlen := len(mhash)
 	// two 8 bytes (max) numbers plus hash
-	buf := make([]byte, 2*binary.MaxVarintLen64+hashlen)
-	n := binary.PutUvarint(buf, 1)
-	n += binary.PutUvarint(buf[n:], codecType)
+	buf := make([]byte, 1+varint.UvarintSize(codecType)+hashlen)
+	n := varint.PutUvarint(buf, 1)
+	n += varint.PutUvarint(buf[n:], codecType)
 	cn := copy(buf[n:], mhash)
 	if cn != hashlen {
 		panic("copy hash length is inconsistent")
@@ -281,17 +272,6 @@ func ExtractEncoding(v string) (mbase.Encoding, error) {
 	return encoding, nil
 }
 
-func uvError(read int) error {
-	switch {
-	case read == 0:
-		return ErrVarintBuffSmall
-	case read < 0:
-		return ErrVarintTooBig
-	default:
-		return nil
-	}
-}
-
 // Cast takes a Cid data slice, parses it and returns a Cid.
 // For CidV1, the data buffer is in the form:
 //
@@ -351,8 +331,8 @@ func (c Cid) Type() uint64 {
 	if c.Version() == 0 {
 		return DagProtobuf
 	}
-	_, n := uvarint(c.str)
-	codec, _ := uvarint(c.str[n:])
+	_, n, _ := uvarint(c.str)
+	codec, _, _ := uvarint(c.str[n:])
 	return codec
 }
 
@@ -414,9 +394,9 @@ func (c Cid) Hash() mh.Multihash {
 	}
 
 	// skip version length
-	_, n1 := binary.Uvarint(bytes)
+	_, n1, _ := varint.FromUvarint(bytes)
 	// skip codec length
-	_, n2 := binary.Uvarint(bytes[n1:])
+	_, n2, _ := varint.FromUvarint(bytes[n1:])
 
 	return mh.Multihash(bytes[n1+n2:])
 }
@@ -562,34 +542,42 @@ func (p Prefix) Sum(data []byte) (Cid, error) {
 //
 //     <version><codec><mh-type><mh-length>
 func (p Prefix) Bytes() []byte {
-	buf := make([]byte, 4*binary.MaxVarintLen64)
-	n := binary.PutUvarint(buf, p.Version)
-	n += binary.PutUvarint(buf[n:], p.Codec)
-	n += binary.PutUvarint(buf[n:], uint64(p.MhType))
-	n += binary.PutUvarint(buf[n:], uint64(p.MhLength))
-	return buf[:n]
+	size := varint.UvarintSize(p.Version)
+	size += varint.UvarintSize(p.Codec)
+	size += varint.UvarintSize(p.MhType)
+	size += varint.UvarintSize(uint64(p.MhLength))
+
+	buf := make([]byte, size)
+	n := varint.PutUvarint(buf, p.Version)
+	n += varint.PutUvarint(buf[n:], p.Codec)
+	n += varint.PutUvarint(buf[n:], p.MhType)
+	n += varint.PutUvarint(buf[n:], uint64(p.MhLength))
+	if n != size {
+		panic("size mismatch")
+	}
+	return buf
 }
 
 // PrefixFromBytes parses a Prefix-byte representation onto a
 // Prefix.
 func PrefixFromBytes(buf []byte) (Prefix, error) {
 	r := bytes.NewReader(buf)
-	vers, err := binary.ReadUvarint(r)
+	vers, err := varint.ReadUvarint(r)
 	if err != nil {
 		return Prefix{}, err
 	}
 
-	codec, err := binary.ReadUvarint(r)
+	codec, err := varint.ReadUvarint(r)
 	if err != nil {
 		return Prefix{}, err
 	}
 
-	mhtype, err := binary.ReadUvarint(r)
+	mhtype, err := varint.ReadUvarint(r)
 	if err != nil {
 		return Prefix{}, err
 	}
 
-	mhlen, err := binary.ReadUvarint(r)
+	mhlen, err := varint.ReadUvarint(r)
 	if err != nil {
 		return Prefix{}, err
 	}
@@ -616,8 +604,8 @@ func CidFromBytes(data []byte) (int, Cid, error) {
 		return 34, Cid{string(h)}, nil
 	}
 
-	vers, n := binary.Uvarint(data)
-	if err := uvError(n); err != nil {
+	vers, n, err := varint.FromUvarint(data)
+	if err != nil {
 		return 0, Undef, err
 	}
 
@@ -625,8 +613,8 @@ func CidFromBytes(data []byte) (int, Cid, error) {
 		return 0, Undef, fmt.Errorf("expected 1 as the cid version number, got: %d", vers)
 	}
 
-	_, cn := binary.Uvarint(data[n:])
-	if err := uvError(cn); err != nil {
+	_, cn, err := varint.FromUvarint(data[n:])
+	if err != nil {
 		return 0, Undef, err
 	}
 
