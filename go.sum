@@ -10,6 +10,8 @@ github.com/multiformats/go-base32 v0.0.3 h1:tw5+NhuwaOjJCC5Pp82QuXbrmLzWg7uxlMFp
 github.com/multiformats/go-base32 v0.0.3/go.mod h1:pLiuGC8y0QR3Ue4Zug5UzK9LjgbkL8NSQj0zQ5Nz/AA=
 github.com/multiformats/go-multibase v0.0.1 h1:PN9/v21eLywrFWdFNsFKaU04kLJzuYzmrJR+ubhT9qA=
 github.com/multiformats/go-multibase v0.0.1/go.mod h1:bja2MqRZ3ggyXtZSEDKpl0uO/gviWFaSteVbWT51qgs=
+github.com/multiformats/go-multibase v0.0.2 h1:2pAgScmS1g9XjH7EtAfNhTuyrWYEWcxy0G5Wo85hWDA=
+github.com/multiformats/go-multibase v0.0.2/go.mod h1:bja2MqRZ3ggyXtZSEDKpl0uO/gviWFaSteVbWT51qgs=
 github.com/multiformats/go-multihash v0.0.12 h1:i2PQZWlsq8asUZwPS5w7VMCoUKEz/k/XG6WH30gsTU8=
 github.com/multiformats/go-multihash v0.0.12/go.mod h1:2+oRiLVLqXx+yxM/RIdhLstp1q2WMJAlQ4kdLkS3un0=
 github.com/multiformats/go-multihash v0.0.13 h1:06x+mk/zj1FoMsgNejLpy6QTvJqlSt/BhLEy87zidlc=
