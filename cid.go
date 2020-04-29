@@ -337,8 +337,8 @@ func (c Cid) Type() uint64 {
 }
 
 // String returns the default string representation of a
-// Cid. Currently, Base58 is used as the encoding for the
-// multibase string.
+// Cid. Currently, Base32 is used for CIDV1 as the encoding for the
+// multibase string, Base58 is used for CIDV0.
 func (c Cid) String() string {
 	switch c.Version() {
 	case 0:
