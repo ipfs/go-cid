@@ -415,9 +415,8 @@ func (c Cid) ByteLen() int {
 }
 
 // WriteTo writes the cids bytes to the given writer
-func (c Cid) WriteTo(w io.Writer) error {
-	_, err := io.WriteString(w, c.str)
-	return err
+func (c Cid) WriteTo(w io.Writer) (int, error) {
+	return io.WriteString(w, c.str)
 }
 
 // MarshalBinary is equivalent to Bytes(). It implements the
