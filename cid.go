@@ -25,6 +25,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"strings"
 
 	mbase "github.com/multiformats/go-multibase"
@@ -406,6 +407,23 @@ func (c Cid) Hash() mh.Multihash {
 // with Cast().
 func (c Cid) Bytes() []byte {
 	return []byte(c.str)
+}
+
+// ByteLen returns the length of the CID in bytes.
+// It's equivalent to `len(c.Bytes())`, but works without an allocation,
+// and should therefore be preferred.
+//
+// (See also the WriteTo method for other important operations that work without allocation.)
+func (c Cid) ByteLen() int {
+	return len(c.str)
+}
+
+// WriteTo writes the CID bytes to the given writer.
+// This method works without incurring any allocation.
+//
+// (See also the ByteLen method for other important operations that work without allocation.)
+func (c Cid) WriteTo(w io.Writer) (int, error) {
+	return io.WriteString(w, c.str)
 }
 
 // MarshalBinary is equivalent to Bytes(). It implements the
