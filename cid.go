@@ -25,6 +25,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"strings"
 
 	mbase "github.com/multiformats/go-multibase"
@@ -406,6 +407,17 @@ func (c Cid) Hash() mh.Multihash {
 // with Cast().
 func (c Cid) Bytes() []byte {
 	return []byte(c.str)
+}
+
+// ByteLen returns len(c.Bytes()) without an allocation
+func (c Cid) ByteLen() int {
+	return len(c.str)
+}
+
+// WriteTo writes the cids bytes to the given writer
+func (c Cid) WriteTo(w io.Writer) error {
+	_, err := io.WriteString(w, c.str)
+	return err
 }
 
 // MarshalBinary is equivalent to Bytes(). It implements the
