@@ -418,12 +418,19 @@ func (c Cid) ByteLen() int {
 	return len(c.str)
 }
 
-// WriteTo writes the CID bytes to the given writer.
+// WriteBytes writes the CID bytes to the given writer.
 // This method works without incurring any allocation.
 //
 // (See also the ByteLen method for other important operations that work without allocation.)
-func (c Cid) WriteTo(w io.Writer) (int, error) {
-	return io.WriteString(w, c.str)
+func (c Cid) WriteBytes(w io.Writer) (int, error) {
+	n, err := io.WriteString(w, c.str)
+	if err != nil {
+		return n, err
+	}
+	if n != len(c.str) {
+		return n, fmt.Errorf("failed to write entire cid string")
+	}
+	return n, nil
 }
 
 // MarshalBinary is equivalent to Bytes(). It implements the
