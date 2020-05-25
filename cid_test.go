@@ -556,6 +556,7 @@ func BenchmarkStringV1(b *testing.B) {
 func TestReadCidsFromBuffer(t *testing.T) {
 	cidstr := []string{
 		"bafkreie5qrjvaw64n4tjm6hbnm7fnqvcssfed4whsjqxzslbd3jwhsk3mm",
+		"k2cwueckqkibutvhkr4p2ln2pjcaxaakpd9db0e7j7ax1lxhhxy3ekpv",
 		"Qmf5Qzp6nGBku7CEn2UQx4mgN8TW69YUok36DrGa6NN893",
 		"zb2rhZi1JR4eNc2jBGaRYJKYM8JEB4ovenym8L1CmFsRAytkz",
 	}
