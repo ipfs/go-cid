@@ -518,12 +518,29 @@ func (c Cid) Loggable() map[string]interface{} {
 
 // Prefix builds and returns a Prefix out of a Cid.
 func (c Cid) Prefix() Prefix {
-	dec, _ := mh.Decode(c.Hash()) // assuming we got a valid multiaddr, this will not error
+	if c.Version() == 0 {
+		return Prefix{
+			MhType:   mh.SHA2_256,
+			MhLength: 32,
+			Version:  0,
+			Codec:    DagProtobuf,
+		}
+	}
+
+	offset := 0
+	version, n, _ := uvarint(c.str[offset:])
+	offset += n
+	codec, n, _ := uvarint(c.str[offset:])
+	offset += n
+	mhtype, n, _ := uvarint(c.str[offset:])
+	offset += n
+	mhlen, _, _ := uvarint(c.str[offset:])
+
 	return Prefix{
-		MhType:   dec.Code,
-		MhLength: dec.Length,
-		Version:  c.Version(),
-		Codec:    c.Type(),
+		MhType:   mhtype,
+		MhLength: int(mhlen),
+		Version:  version,
+		Codec:    codec,
 	}
 }
 
