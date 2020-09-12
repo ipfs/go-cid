@@ -58,6 +58,7 @@ const (
 
 	GitRaw = 0x78
 
+	DagJOSE               = 0x85
 	EthBlock              = 0x90
 	EthBlockList          = 0x91
 	EthTxTrie             = 0x92
@@ -106,6 +107,7 @@ var Codecs = map[string]uint64{
 	"dash-tx":                 DashTx,
 	"fil-commitment-unsealed": FilCommitmentUnsealed,
 	"fil-commitment-sealed":   FilCommitmentSealed,
+	"dag-jose":                DagJOSE,
 }
 
 // CodecToStr maps the numeric codec to its name
@@ -133,6 +135,7 @@ var CodecToStr = map[uint64]string{
 	DashTx:                "dash-tx",
 	FilCommitmentUnsealed: "fil-commitment-unsealed",
 	FilCommitmentSealed:   "fil-commitment-sealed",
+	DagJOSE:               "dag-jose",
 }
 
 // tryNewCidV0 tries to convert a multihash into a CIDv0 CID and returns an
