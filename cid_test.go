@@ -40,6 +40,7 @@ var tCodecs = map[uint64]string{
 	DashTx:                "dash-tx",
 	FilCommitmentUnsealed: "fil-commitment-unsealed",
 	FilCommitmentSealed:   "fil-commitment-sealed",
+	DagJOSE:               "dag-jose",
 }
 
 func assertEqual(t *testing.T, a, b Cid) {
