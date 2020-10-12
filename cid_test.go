@@ -449,7 +449,7 @@ func TestParse(t *testing.T) {
 			return err
 		}
 		if cid.Version() != 0 {
-			return fmt.Errorf("expected version 0, got %s", string(cid.Version()))
+			return fmt.Errorf("expected version 0, got %s", fmt.Sprintf("%d", cid.Version()))
 		}
 		actual := cid.Hash().B58String()
 		if actual != expected {
