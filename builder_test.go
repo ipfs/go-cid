@@ -65,8 +65,28 @@ func TestCodecChange(t *testing.T) {
 		p := Prefix{Version: 1, Codec: DagProtobuf, MhType: mh.SHA2_256, MhLength: mh.DefaultLengths[mh.SHA2_256]}
 		testCodecChange(t, p)
 	})
+	t.Run("Prefix-NoChange", func(t *testing.T) {
+		p := Prefix{Version: 0, Codec: DagProtobuf, MhType: mh.SHA2_256, MhLength: mh.DefaultLengths[mh.SHA2_256]}
+		if p.GetCodec() != DagProtobuf {
+			t.Fatal("original builder not using Protobuf codec")
+		}
+		pn := p.WithCodec(DagProtobuf)
+		if pn != p {
+			t.Fatal("should have returned same builder")
+		}
+	})
 	t.Run("V0Builder", func(t *testing.T) {
 		testCodecChange(t, V0Builder{})
+	})
+	t.Run("V0Builder-NoChange", func(t *testing.T) {
+		b := V0Builder{}
+		if b.GetCodec() != DagProtobuf {
+			t.Fatal("original builder not using Protobuf codec")
+		}
+		bn := b.WithCodec(DagProtobuf)
+		if bn != b {
+			t.Fatal("should have returned same builder")
+		}
 	})
 	t.Run("V1Builder", func(t *testing.T) {
 		testCodecChange(t, V1Builder{Codec: DagProtobuf, MhType: mh.SHA2_256})
