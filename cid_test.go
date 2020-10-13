@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -185,8 +186,32 @@ func TestBasesMarshaling(t *testing.T) {
 		}
 		s2 := cid.Encode(encoder)
 		if s != s2 {
-			t.Fatalf("'%s' != '%s'", s, s2)
+			t.Fatalf("%q != %q", s, s2)
 		}
+
+		ee, err := ExtractEncoding(s)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if ee != b {
+			t.Fatalf("could not properly determine base (got %v)", ee)
+		}
+	}
+
+	ee, err := ExtractEncoding("QmdfTbBqBPQ7VNxZEYEj14VmRuZBkqFbiwReogJgS1zR1n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if ee != mbase.Base58BTC {
+		t.Fatalf("expected Base58BTC from Qm string (got %v)", ee)
+	}
+
+	ee, err = ExtractEncoding("1")
+	if err == nil {
+		t.Fatal("expected too-short error from ExtractEncoding")
+	}
+	if ee != -1 {
+		t.Fatal("expected -1 from too-short ExtractEncoding")
 	}
 }
 
@@ -195,17 +220,31 @@ func TestBinaryMarshaling(t *testing.T) {
 	hash, _ := mh.Sum(data, mh.SHA2_256, -1)
 	c := NewCidV1(DagCBOR, hash)
 	var c2 Cid
+	var c3 Cid
 
 	data, err := c.MarshalBinary()
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = c2.UnmarshalBinary(data)
-	if err != nil {
+	if err = c2.UnmarshalBinary(data); err != nil {
 		t.Fatal(err)
 	}
 	if !c.Equals(c2) {
 		t.Errorf("cids should be the same: %s %s", c, c2)
+	}
+	var buf bytes.Buffer
+	wrote, err := c.WriteBytes(&buf)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if wrote != 36 {
+		t.Fatalf("expected 36 bytes written (got %d)", wrote)
+	}
+	if err = c3.UnmarshalBinary(data); err != nil {
+		t.Fatal(err)
+	}
+	if !c.Equals(c3) {
+		t.Errorf("cids should be the same: %s %s", c, c3)
 	}
 }
 
@@ -219,12 +258,15 @@ func TestTextMarshaling(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = c2.UnmarshalText(data)
-	if err != nil {
+	if err = c2.UnmarshalText(data); err != nil {
 		t.Fatal(err)
 	}
 	if !c.Equals(c2) {
 		t.Errorf("cids should be the same: %s %s", c, c2)
+	}
+
+	if c.KeyString() != string(c.Bytes()) {
+		t.Errorf("got unexpected KeyString() result")
 	}
 }
 
@@ -255,6 +297,11 @@ func TestV0Handling(t *testing.T) {
 		t.Fatal("marshaling roundtrip failed")
 	}
 
+	byteLen := cid.ByteLen()
+	if byteLen != 34 {
+		t.Fatalf("expected V0 ByteLen to be 34 (got %d)", byteLen)
+	}
+
 	new, err := cid.StringOfBase(mbase.Base58BTC)
 	if err != nil {
 		t.Fatal(err)
@@ -269,6 +316,11 @@ func TestV0Handling(t *testing.T) {
 	}
 	if cid.Encode(encoder) != old {
 		t.Fatal("Encode roundtrip failed")
+	}
+
+	_, err = cid.StringOfBase(mbase.Base32)
+	if err != ErrInvalidEncoding {
+		t.Fatalf("expected ErrInvalidEncoding for V0 StringOfBase(Base32) (got %v)", err)
 	}
 }
 
@@ -370,7 +422,14 @@ func TestInvalidV0Prefix(t *testing.T) {
 			t.Fatalf("should error (index %d)", i)
 		}
 	}
+}
 
+func TestBadPrefix(t *testing.T) {
+	p := Prefix{Version: 3, Codec: DagProtobuf, MhType: mh.SHA2_256, MhLength: 3}
+	_, err := p.Sum([]byte{0x00, 0x01, 0x03})
+	if err == nil {
+		t.Fatalf("expected error on v3 prefix Sum")
+	}
 }
 
 func TestPrefixRoundtrip(t *testing.T) {
@@ -399,6 +458,25 @@ func TestPrefixRoundtrip(t *testing.T) {
 	if pref.Version != pref2.Version || pref.Codec != pref2.Codec ||
 		pref.MhType != pref2.MhType || pref.MhLength != pref2.MhLength {
 		t.Fatal("input prefix didnt match output")
+	}
+}
+
+func TestBadPrefixFromBytes(t *testing.T) {
+	_, err := PrefixFromBytes([]byte{0x80})
+	if err == nil {
+		t.Fatal("expected error for bad byte 0")
+	}
+	_, err = PrefixFromBytes([]byte{0x01, 0x80})
+	if err == nil {
+		t.Fatal("expected error for bad byte 1")
+	}
+	_, err = PrefixFromBytes([]byte{0x01, 0x01, 0x80})
+	if err == nil {
+		t.Fatal("expected error for bad byte 2")
+	}
+	_, err = PrefixFromBytes([]byte{0x01, 0x01, 0x01, 0x80})
+	if err == nil {
+		t.Fatal("expected error for bad byte 3")
 	}
 }
 
@@ -449,7 +527,7 @@ func TestParse(t *testing.T) {
 			return err
 		}
 		if cid.Version() != 0 {
-			return fmt.Errorf("expected version 0, got %s", fmt.Sprintf("%d", cid.Version()))
+			return fmt.Errorf("expected version 0, got %d", cid.Version())
 		}
 		actual := cid.Hash().B58String()
 		if actual != expected {
@@ -463,8 +541,7 @@ func TestParse(t *testing.T) {
 	}
 
 	for _, args := range assertions {
-		err := assert(args[0], args[1].(string))
-		if err != nil {
+		if err := assert(args[0], args[1].(string)); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -498,8 +575,7 @@ func TestFromJson(t *testing.T) {
 	cval := "bafkreie5qrjvaw64n4tjm6hbnm7fnqvcssfed4whsjqxzslbd3jwhsk3mm"
 	jsoncid := []byte(`{"/":"` + cval + `"}`)
 	var c Cid
-	err := json.Unmarshal(jsoncid, &c)
-	if err != nil {
+	if err := json.Unmarshal(jsoncid, &c); err != nil {
 		t.Fatal(err)
 	}
 
@@ -509,6 +585,7 @@ func TestFromJson(t *testing.T) {
 }
 
 func TestJsonRoundTrip(t *testing.T) {
+	expectedJSON := `{"/":"bafkreie5qrjvaw64n4tjm6hbnm7fnqvcssfed4whsjqxzslbd3jwhsk3mm"}`
 	exp, err := Decode("bafkreie5qrjvaw64n4tjm6hbnm7fnqvcssfed4whsjqxzslbd3jwhsk3mm")
 	if err != nil {
 		t.Fatal(err)
@@ -520,9 +597,15 @@ func TestJsonRoundTrip(t *testing.T) {
 		t.Fatal(err)
 	}
 	var actual Cid
-	err = json.Unmarshal(enc, &actual)
+	if err = json.Unmarshal(enc, &actual); err != nil {
+		t.Fatal(err)
+	}
 	if !exp.Equals(actual) {
 		t.Fatal("cids not equal for *Cid")
+	}
+
+	if string(enc) != expectedJSON {
+		t.Fatalf("did not get expected JSON form (got %q)", string(enc))
 	}
 
 	// Verify it works for a Cid.
@@ -531,9 +614,32 @@ func TestJsonRoundTrip(t *testing.T) {
 		t.Fatal(err)
 	}
 	var actual2 Cid
-	err = json.Unmarshal(enc, &actual2)
+	if err = json.Unmarshal(enc, &actual2); err != nil {
+		t.Fatal(err)
+	}
 	if !exp.Equals(actual2) {
 		t.Fatal("cids not equal for Cid")
+	}
+
+	if err = actual2.UnmarshalJSON([]byte("1")); err == nil {
+		t.Fatal("expected error for too-short JSON")
+	}
+
+	if err = actual2.UnmarshalJSON([]byte(`{"nope":"nope"}`)); err == nil {
+		t.Fatal("expected error for bad CID JSON")
+	}
+
+	if err = actual2.UnmarshalJSON([]byte(`bad "" json!`)); err == nil {
+		t.Fatal("expected error for bad JSON")
+	}
+
+	var actual3 Cid
+	enc, err = actual3.MarshalJSON()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(enc) != "null" {
+		t.Fatalf("expected 'null' string for undefined CID (got %q)", string(enc))
 	}
 }
 
@@ -589,6 +695,52 @@ func TestReadCidsFromBuffer(t *testing.T) {
 	}
 }
 
+func TestBadCidFromBytes(t *testing.T) {
+	l, c, err := CidFromBytes([]byte{mh.SHA2_256, 32, 0x00})
+	if err == nil {
+		t.Fatal("expected not-enough-bytes for V0 CidFromBytes")
+	}
+	if l != 0 {
+		t.Fatal("expected length=0 from bad CidFromBytes")
+	}
+	if c != Undef {
+		t.Fatal("expected Undef CID from bad CidFromBytes")
+	}
+
+	c, err = Decode("bafkreie5qrjvaw64n4tjm6hbnm7fnqvcssfed4whsjqxzslbd3jwhsk3mm")
+	if err != nil {
+		t.Fatal(err)
+	}
+	byts := make([]byte, c.ByteLen())
+	copy(byts, c.Bytes())
+	byts[1] = 0x80 // bad codec varint
+	byts[2] = 0x00
+	l, c, err = CidFromBytes(byts)
+	if err == nil {
+		t.Fatal("expected not-enough-bytes for V1 CidFromBytes")
+	}
+	if l != 0 {
+		t.Fatal("expected length=0 from bad CidFromBytes")
+	}
+	if c != Undef {
+		t.Fatal("expected Undef CID from bad CidFromBytes")
+	}
+
+	copy(byts, c.Bytes())
+	byts[2] = 0x80 // bad multihash varint
+	byts[3] = 0x00
+	l, c, err = CidFromBytes(byts)
+	if err == nil {
+		t.Fatal("expected not-enough-bytes for V1 CidFromBytes")
+	}
+	if l != 0 {
+		t.Fatal("expected length=0 from bad CidFromBytes")
+	}
+	if c != Undef {
+		t.Fatal("expected Undef CID from bad CidFromBytes")
+	}
+}
+
 func TestBadParse(t *testing.T) {
 	hash, err := mh.Sum([]byte("foobar"), mh.SHA3_256, -1)
 	if err != nil {
@@ -597,5 +749,18 @@ func TestBadParse(t *testing.T) {
 	_, err = Parse(hash)
 	if err == nil {
 		t.Fatal("expected to fail to parse an invalid CIDv1 CID")
+	}
+}
+
+func TestLoggable(t *testing.T) {
+	c, err := Decode("bafkreie5qrjvaw64n4tjm6hbnm7fnqvcssfed4whsjqxzslbd3jwhsk3mm")
+	if err != nil {
+		t.Fatal(err)
+	}
+	actual := c.Loggable()
+	expected := make(map[string]interface{})
+	expected["cid"] = c
+	if !reflect.DeepEqual(actual, expected) {
+		t.Fatalf("did not get expected loggable form (got %v)", actual)
 	}
 }
