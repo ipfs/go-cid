@@ -28,3 +28,29 @@ func TestUvarintRoundTrip(t *testing.T) {
 		}
 	}
 }
+
+func TestUvarintEdges(t *testing.T) {
+	tests := []struct {
+		name  string
+		input []byte
+		want  error
+	}{
+		{"ErrNotMinimal", []byte{0x01 | 0x80, 0}, varint.ErrNotMinimal},
+		{"ErrOverflow", []byte{0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x01}, varint.ErrOverflow},
+		{"ErrUnderflow", []byte{0x80}, varint.ErrUnderflow},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			v, l1, err := uvarint(string(test.input))
+			if err != test.want {
+				t.Fatalf("error case (%v) should return varint.%s (got: %v)", test.input, test.name, err)
+			}
+			if v != 0 {
+				t.Fatalf("error case (%v) should return 0 value (got %d)", test.input, v)
+			}
+			if l1 != 0 {
+				t.Fatalf("error case (%v) should return 0 length (got %d)", test.input, l1)
+			}
+		})
+	}
+}
