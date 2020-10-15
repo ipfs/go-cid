@@ -12,7 +12,7 @@ import (
 // license as given at https://golang.org/LICENSE
 
 // uvarint decodes a uint64 from buf and returns that value and the
-// number of characters read (> 0). If an error occurred, then 0 is
+// number of bytes read (> 0). If an error occurred, then 0 is
 // returned for both the value and the number of bytes read, and an
 // error is returned.
 func uvarint(buf string) (uint64, int, error) {
