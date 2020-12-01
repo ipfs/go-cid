@@ -254,6 +254,9 @@ func Decode(v string) (Cid, error) {
 
 	_, data, err := mbase.Decode(v)
 	if err != nil {
+		if len(v) == 46 && v[:2] == "qm" { // https://github.com/ipfs/go-ipfs/issues/7792
+			return Undef, fmt.Errorf("%v: This looks like a CIDv0 that has been lowercased. Convert the CIDv0 to CIDv1 in case-insensitive base32 using 'ipfs cid base32 <Qm..>' and try again.", err)
+		}
 		return Undef, err
 	}
 

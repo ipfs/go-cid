@@ -332,6 +332,17 @@ func TestV0ErrorCases(t *testing.T) {
 	}
 }
 
+func TestV0ErrorDueToLowercase(t *testing.T) {
+	badb58 := "qmbwqxbekc3p8tqskc98xmwnzrzdtrlmimpl8wbutgsmnr"
+	_, err := Decode(badb58)
+	if err == nil {
+		t.Fatal("should have failed to decode")
+	}
+	if !strings.HasSuffix(err.Error(), "This looks like a CIDv0 that has been lowercased. Convert the CIDv0 to CIDv1 in case-insensitive base32 using 'ipfs cid base32 <Qm..>' and try again.") {
+		t.Fatal("should have meaningful info about case-insensitive fix")
+	}
+}
+
 func TestNewPrefixV1(t *testing.T) {
 	data := []byte("this is some test content")
 
