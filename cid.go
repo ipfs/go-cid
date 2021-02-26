@@ -573,8 +573,15 @@ func (p Prefix) Sum(data []byte) (Cid, error) {
 
 		return Undef, fmt.Errorf("invalid v0 prefix")
 	}
+	digest, err := mh.Digest(data, p.MhType, length)
+	if err != nil {
+		return Undef, err
+	}
+	return p.FromDigest(digest)
+}
 
-	hash, err := mh.Sum(data, p.MhType, length)
+func (p Prefix) FromDigest(digest []byte) (Cid, error) {
+	hash, err := mh.Encode(digest, p.MhType)
 	if err != nil {
 		return Undef, err
 	}
