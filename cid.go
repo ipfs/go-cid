@@ -365,8 +365,8 @@ func (c Cid) String() string {
 	}
 }
 
-// String returns the string representation of a Cid
-// encoded is selected base
+// StringOfBase returns the string representation of a Cid
+// encoded in a selected base
 func (c Cid) StringOfBase(base mbase.Encoding) (string, error) {
 	switch c.Version() {
 	case 0:
@@ -547,6 +547,12 @@ func (c Cid) Prefix() Prefix {
 	}
 }
 
+// Prototype returns the IPLD LinkPrototype which carries the information
+// to make more Link values similar to this one (but with different hashes).
+func (c Cid) Prototype() Prefix {
+	return c.Prefix()
+}
+
 // Prefix represents all the metadata of a Cid,
 // that is, the Version, the Codec, the Multihash type
 // and the Multihash length. It does not contains
@@ -587,6 +593,13 @@ func (p Prefix) Sum(data []byte) (Cid, error) {
 	default:
 		return Undef, fmt.Errorf("invalid cid version")
 	}
+}
+
+// BuildLink returns a new Link value based on the given hashsum,
+// and allows Prefix to satisfy the LinkPrototype interface.
+func (p Prefix) BuildLink(hashsum []byte) Cid {
+	c, _ := p.Sum(hashsum)
+	return c
 }
 
 // Bytes returns a byte representation of a Prefix. It looks like:
