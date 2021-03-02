@@ -597,6 +597,8 @@ func (p Prefix) Sum(data []byte) (Cid, error) {
 
 // BuildLink returns a new Link value based on the given hashsum,
 // and allows Prefix to satisfy the LinkPrototype interface.
+// If the hash or prefix state is invalid, `Cid.Undef` will be
+// returned. For a more specific error, use `Sum`.
 func (p Prefix) BuildLink(hashsum []byte) Cid {
 	c, _ := p.Sum(hashsum)
 	return c
