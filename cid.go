@@ -28,6 +28,7 @@ import (
 	"io"
 	"strings"
 
+	"github.com/ipld/go-ipld-prime"
 	mbase "github.com/multiformats/go-multibase"
 	mh "github.com/multiformats/go-multihash"
 	varint "github.com/multiformats/go-varint"
@@ -549,7 +550,7 @@ func (c Cid) Prefix() Prefix {
 
 // Prototype returns the IPLD LinkPrototype which carries the information
 // to make more Link values similar to this one (but with different hashes).
-func (c Cid) Prototype() Prefix {
+func (c Cid) Prototype() ipld.LinkPrototype {
 	return c.Prefix()
 }
 
@@ -599,7 +600,7 @@ func (p Prefix) Sum(data []byte) (Cid, error) {
 // and allows Prefix to satisfy the LinkPrototype interface.
 // If the hash or prefix state is invalid, `Cid.Undef` will be
 // returned. For a more specific error, use `Sum`.
-func (p Prefix) BuildLink(hashsum []byte) Cid {
+func (p Prefix) BuildLink(hashsum []byte) ipld.Link {
 	c, _ := p.Sum(hashsum)
 	return c
 }
