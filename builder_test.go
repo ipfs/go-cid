@@ -1,6 +1,7 @@
 package cid
 
 import (
+	"bytes"
 	"testing"
 
 	mh "github.com/multiformats/go-multihash"
@@ -16,6 +17,15 @@ func TestV0Builder(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	reader := bytes.NewReader(data)
+	c1a, err := format.SumStream(reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !c1a.Equals(c1) {
+		t.Fatal("Sum and SumStream create different cids")
+	}
+
 	// Construct c2
 	hash, err := mh.Sum(data, mh.SHA2_256, -1)
 	if err != nil {
@@ -29,6 +39,16 @@ func TestV0Builder(t *testing.T) {
 	if c1.Prefix() != c2.Prefix() {
 		t.Fatal("prefixes mismatch")
 	}
+
+	reader.Seek(0, 0)
+	hash, err = mh.SumStream(reader, mh.SHA2_256, -1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	c2 = NewCidV0(hash)
+	if !c1.Equals(c2) {
+		t.Fatal("Sum and SumStream create different cids")
+	}
 }
 
 func TestV1Builder(t *testing.T) {
@@ -39,6 +59,15 @@ func TestV1Builder(t *testing.T) {
 	c1, err := format.Sum(data)
 	if err != nil {
 		t.Fatal(err)
+	}
+
+	reader := bytes.NewReader(data)
+	c1a, err := format.SumStream(reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !c1a.Equals(c1) {
+		t.Fatal("Sum and SumStream create different cids")
 	}
 
 	// Construct c2

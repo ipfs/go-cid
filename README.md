@@ -88,7 +88,7 @@ if c1.Equals(c2) {
 ```go
 // To check if some data matches a given cid, 
 // Get your CIDs prefix, and use that to sum the data in question:
-other, err := c.Prefix().Sum(mydata)
+other, err := c.Prefix().SumStream(myFile)
 if err != nil {...}
 
 if !c.Equals(other) {

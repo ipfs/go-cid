@@ -589,6 +589,36 @@ func (p Prefix) Sum(data []byte) (Cid, error) {
 	}
 }
 
+// SumStream uses the information in a prefix, and data read from a io.Reader,
+// to perform a multihash.SumStream() and return a newly constructed Cid with
+// the resulting multihash.
+func (p Prefix) SumStream(r io.Reader) (Cid, error) {
+	length := p.MhLength
+	if p.MhType == mh.ID {
+		length = -1
+	}
+
+	if p.Version == 0 && (p.MhType != mh.SHA2_256 ||
+		(p.MhLength != 32 && p.MhLength != -1)) {
+
+		return Undef, fmt.Errorf("invalid v0 prefix")
+	}
+
+	hash, err := mh.SumStream(r, p.MhType, length)
+	if err != nil {
+		return Undef, err
+	}
+
+	switch p.Version {
+	case 0:
+		return NewCidV0(hash), nil
+	case 1:
+		return NewCidV1(p.Codec, hash), nil
+	default:
+		return Undef, fmt.Errorf("invalid cid version")
+	}
+}
+
 // Bytes returns a byte representation of a Prefix. It looks like:
 //
 //     <version><codec><mh-type><mh-length>

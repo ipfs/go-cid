@@ -1,6 +1,8 @@
 package cid
 
 import (
+	"io"
+
 	mh "github.com/multiformats/go-multihash"
 )
 
@@ -41,6 +43,14 @@ func (p V0Builder) Sum(data []byte) (Cid, error) {
 	return Cid{string(hash)}, nil
 }
 
+func (p V0Builder) SumStream(r io.Reader) (Cid, error) {
+	hash, err := mh.SumStream(r, mh.SHA2_256, -1)
+	if err != nil {
+		return Undef, err
+	}
+	return Cid{string(hash)}, nil
+}
+
 func (p V0Builder) GetCodec() uint64 {
 	return DagProtobuf
 }
@@ -58,6 +68,18 @@ func (p V1Builder) Sum(data []byte) (Cid, error) {
 		mhLen = -1
 	}
 	hash, err := mh.Sum(data, p.MhType, mhLen)
+	if err != nil {
+		return Undef, err
+	}
+	return NewCidV1(p.Codec, hash), nil
+}
+
+func (p V1Builder) SumStream(r io.Reader) (Cid, error) {
+	mhLen := p.MhLength
+	if mhLen <= 0 {
+		mhLen = -1
+	}
+	hash, err := mh.SumStream(r, p.MhType, mhLen)
 	if err != nil {
 		return Undef, err
 	}
