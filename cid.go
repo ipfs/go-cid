@@ -185,10 +185,12 @@ func NewCidV1(codecType uint64, mhash mh.Multihash) Cid {
 	return Cid{string(buf[:n+hashlen])}
 }
 
-var _ encoding.BinaryMarshaler = Cid{}
-var _ encoding.BinaryUnmarshaler = (*Cid)(nil)
-var _ encoding.TextMarshaler = Cid{}
-var _ encoding.TextUnmarshaler = (*Cid)(nil)
+var (
+	_ encoding.BinaryMarshaler   = Cid{}
+	_ encoding.BinaryUnmarshaler = (*Cid)(nil)
+	_ encoding.TextMarshaler     = Cid{}
+	_ encoding.TextUnmarshaler   = (*Cid)(nil)
+)
 
 // Cid represents a self-describing content addressed
 // identifier. It is formed by a Version, a Codec (which indicates
@@ -564,7 +566,7 @@ type Prefix struct {
 // and return a newly constructed Cid with the resulting multihash.
 func (p Prefix) Sum(data []byte) (Cid, error) {
 	length := p.MhLength
-	if p.MhType == mh.ID {
+	if p.MhType == mh.IDENTITY {
 		length = -1
 	}
 

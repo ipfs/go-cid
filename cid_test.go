@@ -82,7 +82,7 @@ func TestPrefixSum(t *testing.T) {
 	// Test creating CIDs both manually and with Prefix.
 	// Tests: https://github.com/ipfs/go-cid/issues/83
 	for _, hashfun := range []uint64{
-		mh.ID, mh.SHA3, mh.SHA2_256,
+		mh.IDENTITY, mh.SHA3, mh.SHA2_256,
 	} {
 		h1, err := mh.Sum([]byte("TEST"), hashfun, -1)
 		if err != nil {
@@ -388,7 +388,6 @@ func TestNewPrefixV0(t *testing.T) {
 	if c1.Prefix() != c2.Prefix() {
 		t.Fatal("prefixes mismatch")
 	}
-
 }
 
 func TestInvalidV0Prefix(t *testing.T) {
@@ -512,13 +511,13 @@ func TestParse(t *testing.T) {
 	}
 
 	assertions := [][]interface{}{
-		[]interface{}{NewCidV0(h), theHash},
-		[]interface{}{NewCidV0(h).Bytes(), theHash},
-		[]interface{}{h, theHash},
-		[]interface{}{theHash, theHash},
-		[]interface{}{"/ipfs/" + theHash, theHash},
-		[]interface{}{"https://ipfs.io/ipfs/" + theHash, theHash},
-		[]interface{}{"http://localhost:8080/ipfs/" + theHash, theHash},
+		{NewCidV0(h), theHash},
+		{NewCidV0(h).Bytes(), theHash},
+		{h, theHash},
+		{theHash, theHash},
+		{"/ipfs/" + theHash, theHash},
+		{"https://ipfs.io/ipfs/" + theHash, theHash},
+		{"http://localhost:8080/ipfs/" + theHash, theHash},
 	}
 
 	assert := func(arg interface{}, expected string) error {
