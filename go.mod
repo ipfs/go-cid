@@ -6,4 +6,4 @@ require (
 	github.com/multiformats/go-varint v0.0.6
 )
 
-go 1.13
+go 1.15
