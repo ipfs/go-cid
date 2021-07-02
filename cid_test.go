@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"math/rand"
 	"reflect"
 	"strings"
 	"testing"
+	"testing/iotest"
 
 	mbase "github.com/multiformats/go-multibase"
 	mh "github.com/multiformats/go-multihash"
@@ -691,6 +693,31 @@ func TestReadCidsFromBuffer(t *testing.T) {
 	}
 	if cur != len(buf) {
 		t.Fatal("had trailing bytes")
+	}
+
+	// The same, but now with CidFromReader.
+	// In multiple forms, to catch more io interface bugs.
+	for _, r := range []io.Reader{
+		// implements io.ByteReader
+		bytes.NewReader(buf),
+
+		// tiny reads, no io.ByteReader
+		iotest.OneByteReader(bytes.NewReader(buf)),
+	} {
+		cur = 0
+		for _, expc := range cids {
+			n, c, err := CidFromReader(r)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if c != expc {
+				t.Fatal("cids mismatched")
+			}
+			cur += n
+		}
+		if cur != len(buf) {
+			t.Fatal("had trailing bytes")
+		}
 	}
 }
 
