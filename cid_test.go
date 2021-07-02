@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"math/rand"
 	"reflect"
 	"strings"
 	"testing"
+	"testing/iotest"
 
 	mbase "github.com/multiformats/go-multibase"
 	mh "github.com/multiformats/go-multihash"
@@ -692,51 +694,98 @@ func TestReadCidsFromBuffer(t *testing.T) {
 	if cur != len(buf) {
 		t.Fatal("had trailing bytes")
 	}
+
+	// The same, but now with CidFromReader.
+	// In multiple forms, to catch more io interface bugs.
+	for _, r := range []io.Reader{
+		// implements io.ByteReader
+		bytes.NewReader(buf),
+
+		// tiny reads, no io.ByteReader
+		iotest.OneByteReader(bytes.NewReader(buf)),
+	} {
+		cur = 0
+		for _, expc := range cids {
+			n, c, err := CidFromReader(r)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if c != expc {
+				t.Fatal("cids mismatched")
+			}
+			cur += n
+		}
+		if cur != len(buf) {
+			t.Fatal("had trailing bytes")
+		}
+	}
 }
 
-func TestBadCidFromBytes(t *testing.T) {
-	l, c, err := CidFromBytes([]byte{mh.SHA2_256, 32, 0x00})
-	if err == nil {
-		t.Fatal("expected not-enough-bytes for V0 CidFromBytes")
-	}
-	if l != 0 {
-		t.Fatal("expected length=0 from bad CidFromBytes")
-	}
-	if c != Undef {
-		t.Fatal("expected Undef CID from bad CidFromBytes")
-	}
+func TestBadCidInput(t *testing.T) {
+	for _, name := range []string{
+		"FromBytes",
+		"FromReader",
+	} {
+		t.Run(name, func(t *testing.T) {
+			usingReader := name == "FromReader"
 
-	c, err = Decode("bafkreie5qrjvaw64n4tjm6hbnm7fnqvcssfed4whsjqxzslbd3jwhsk3mm")
-	if err != nil {
-		t.Fatal(err)
-	}
-	byts := make([]byte, c.ByteLen())
-	copy(byts, c.Bytes())
-	byts[1] = 0x80 // bad codec varint
-	byts[2] = 0x00
-	l, c, err = CidFromBytes(byts)
-	if err == nil {
-		t.Fatal("expected not-enough-bytes for V1 CidFromBytes")
-	}
-	if l != 0 {
-		t.Fatal("expected length=0 from bad CidFromBytes")
-	}
-	if c != Undef {
-		t.Fatal("expected Undef CID from bad CidFromBytes")
-	}
+			fromBytes := CidFromBytes
+			if usingReader {
+				fromBytes = func(data []byte) (int, Cid, error) {
+					return CidFromReader(bytes.NewReader(data))
+				}
+			}
 
-	copy(byts, c.Bytes())
-	byts[2] = 0x80 // bad multihash varint
-	byts[3] = 0x00
-	l, c, err = CidFromBytes(byts)
-	if err == nil {
-		t.Fatal("expected not-enough-bytes for V1 CidFromBytes")
-	}
-	if l != 0 {
-		t.Fatal("expected length=0 from bad CidFromBytes")
-	}
-	if c != Undef {
-		t.Fatal("expected Undef CID from bad CidFromBytes")
+			l, c, err := fromBytes([]byte{mh.SHA2_256, 32, 0x00})
+			if err == nil {
+				t.Fatal("expected not-enough-bytes for V0 CID")
+			}
+			if !usingReader && l != 0 {
+				t.Fatal("expected length==0 from bad CID")
+			} else if usingReader && l == 0 {
+				t.Fatal("expected length!=0 from bad CID")
+			}
+			if c != Undef {
+				t.Fatal("expected Undef CID from bad CID")
+			}
+
+			c, err = Decode("bafkreie5qrjvaw64n4tjm6hbnm7fnqvcssfed4whsjqxzslbd3jwhsk3mm")
+			if err != nil {
+				t.Fatal(err)
+			}
+			byts := make([]byte, c.ByteLen())
+			copy(byts, c.Bytes())
+			byts[1] = 0x80 // bad codec varint
+			byts[2] = 0x00
+			l, c, err = fromBytes(byts)
+			if err == nil {
+				t.Fatal("expected not-enough-bytes for V1 CID")
+			}
+			if !usingReader && l != 0 {
+				t.Fatal("expected length==0 from bad CID")
+			} else if usingReader && l == 0 {
+				t.Fatal("expected length!=0 from bad CID")
+			}
+			if c != Undef {
+				t.Fatal("expected Undef CID from bad CID")
+			}
+
+			copy(byts, c.Bytes())
+			byts[2] = 0x80 // bad multihash varint
+			byts[3] = 0x00
+			l, c, err = fromBytes(byts)
+			if err == nil {
+				t.Fatal("expected not-enough-bytes for V1 CID")
+			}
+			if !usingReader && l != 0 {
+				t.Fatal("expected length==0 from bad CID")
+			} else if usingReader && l == 0 {
+				t.Fatal("expected length!=0 from bad CID")
+			}
+			if c != Undef {
+				t.Fatal("expected Undef CID from bad CidFromBytes")
+			}
+		})
 	}
 }
 
