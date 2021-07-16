@@ -793,7 +793,7 @@ func CidFromReader(r io.Reader) (int, Cid, error) {
 	if cidLength > cap(br.dst) {
 		// If the multihash digest doesn't fit in our initial 64 bytes,
 		// efficiently extend the slice via append+make.
-		br.dst = append(br.dst, make([]byte, cidLength-cap(br.dst))...)
+		br.dst = append(br.dst, make([]byte, cidLength-len(br.dst))...)
 	} else {
 		// The multihash digest fits inside our buffer,
 		// so just extend its capacity.
