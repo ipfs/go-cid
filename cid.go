@@ -22,6 +22,7 @@ package cid
 import (
 	"bytes"
 	"encoding"
+	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -173,16 +174,24 @@ func NewCidV0(mhash mh.Multihash) Cid {
 // Panics if the multihash is invalid.
 func NewCidV1(codecType uint64, mhash mh.Multihash) Cid {
 	hashlen := len(mhash)
-	// two 8 bytes (max) numbers plus hash
-	buf := make([]byte, 1+varint.UvarintSize(codecType)+hashlen)
-	n := varint.PutUvarint(buf, 1)
-	n += varint.PutUvarint(buf[n:], codecType)
-	cn := copy(buf[n:], mhash)
+
+	// Two 8 bytes (max) numbers plus hash.
+	// We use strings.Builder to only allocate once.
+	var b strings.Builder
+	b.Grow(1 + varint.UvarintSize(codecType) + hashlen)
+
+	b.WriteByte(1)
+
+	var buf [binary.MaxVarintLen64]byte
+	n := varint.PutUvarint(buf[:], codecType)
+	b.Write(buf[:n])
+
+	cn, _ := b.Write(mhash)
 	if cn != hashlen {
 		panic("copy hash length is inconsistent")
 	}
 
-	return Cid{string(buf[:n+hashlen])}
+	return Cid{b.String()}
 }
 
 var (
