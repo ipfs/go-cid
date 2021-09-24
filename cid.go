@@ -26,6 +26,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	multihash "github.com/multiformats/go-multihash/core"
 	"io"
 	"strings"
 
@@ -824,4 +825,36 @@ func CidFromReader(r io.Reader) (int, Cid, error) {
 	}
 
 	return len(br.dst), Cid{string(br.dst)}, nil
+}
+
+// IsIdentity checks whether a CID has multihash.IDENTITY code.
+// Note that this function is optimized to return fast.
+// Checking for multihash.IDENTITY code in this function does not fully verify the validity of the CID.
+func (c Cid) IsIdentity() (bool, error) {
+
+	if c.Version() == 0 {
+		return false, nil
+	}
+
+	var n int
+	// Skip version.
+	_, n, err := uvarint(c.str[n:])
+	if err != nil {
+		return false, err
+	}
+	n += n
+
+	// Skip codec.
+	_, n, err = uvarint(c.str[n:])
+	if err != nil {
+		return false, err
+	}
+	n += n
+
+	// Read multihash code.
+	mhCode, _, err := uvarint(c.str[n:])
+	if err != nil {
+		return false, nil
+	}
+	return mhCode == multihash.IDENTITY, nil
 }

@@ -813,3 +813,72 @@ func TestLoggable(t *testing.T) {
 		t.Fatalf("did not get expected loggable form (got %v)", actual)
 	}
 }
+
+func TestCid_IsIdentity(t *testing.T) {
+
+	tests := []struct {
+		name    string
+		cid     Cid
+		want    bool
+		wantErr bool
+	}{
+		{
+			name: "IdentityCidV1IsIdentity",
+			cid:  generateCidV1(t, mh.IDENTITY, []byte("fish")),
+			want: true,
+		},
+		{
+			name: "mhSHA256CidV1IsNotIdentity",
+			cid:  generateCidV1(t, mh.SHA2_256, []byte("fish")),
+		},
+		{
+			name: "mhSHA3CidV1IsNotIdentity",
+			cid:  generateCidV1(t, mh.SHA3, []byte("fishmonger")),
+		},
+		{
+			name: "CidV0IsNotIdentity",
+			cid:  generateCidV0(t, []byte("lobster")),
+		},
+		{
+			name:    "InvalidCidIsError",
+			cid:     Cid{""},
+			wantErr: true,
+		},
+		{
+			name: "InvalidCidV0IsNotIdentity",
+			cid:  Cid{"Uabcdefg"},
+		},
+		{
+			name: "InvalidCidV1IsNotIdentity",
+			cid:  Cid{"bafkre"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.cid.IsIdentity()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("IsIdentity() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("IsIdentity() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func generateCidV1(t *testing.T, mhCode uint64, data []byte) Cid {
+	m, err := mh.Sum(data, mhCode, -1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return NewCidV1(Raw, m)
+}
+
+func generateCidV0(t *testing.T, data []byte) Cid {
+	m, err := mh.Sum(data, mh.SHA2_256, -1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return NewCidV0(m)
+}
