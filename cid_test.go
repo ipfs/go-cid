@@ -20,9 +20,13 @@ import (
 // Makes it so changing the table accidentally has to happen twice.
 var tCodecs = map[uint64]string{
 	Raw:                   "raw",
-	DagProtobuf:           "protobuf",
-	DagCBOR:               "cbor",
+	DagProtobuf:           "dag-pb",
+	DagCBOR:               "dag-cbor",
+	DagJSON:               "dag-json",
 	Libp2pKey:             "libp2p-key",
+	Protobuf:              "protobuf",
+	CBOR:                  "cbor",
+	JSON:                  "json",
 	GitRaw:                "git-raw",
 	EthBlock:              "eth-block",
 	EthBlockList:          "eth-block-list",
@@ -44,6 +48,7 @@ var tCodecs = map[uint64]string{
 	FilCommitmentUnsealed: "fil-commitment-unsealed",
 	FilCommitmentSealed:   "fil-commitment-sealed",
 	DagJOSE:               "dag-jose",
+	DagCOSE:               "dag-cose",
 }
 
 func assertEqual(t *testing.T, a, b Cid) {
