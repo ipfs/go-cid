@@ -15,42 +15,6 @@ import (
 	mh "github.com/multiformats/go-multihash"
 )
 
-// Copying the "silly test" idea from
-// https://github.com/multiformats/go-multihash/blob/7aa9f26a231c6f34f4e9fad52bf580fd36627285/multihash_test.go#L13
-// Makes it so changing the table accidentally has to happen twice.
-var tCodecs = map[uint64]string{
-	Raw:                   "raw",
-	DagProtobuf:           "dag-pb",
-	DagCBOR:               "dag-cbor",
-	DagJSON:               "dag-json",
-	Libp2pKey:             "libp2p-key",
-	Protobuf:              "protobuf",
-	CBOR:                  "cbor",
-	JSON:                  "json",
-	GitRaw:                "git-raw",
-	EthBlock:              "eth-block",
-	EthBlockList:          "eth-block-list",
-	EthTxTrie:             "eth-tx-trie",
-	EthTx:                 "eth-tx",
-	EthTxReceiptTrie:      "eth-tx-receipt-trie",
-	EthTxReceipt:          "eth-tx-receipt",
-	EthStateTrie:          "eth-state-trie",
-	EthAccountSnapshot:    "eth-account-snapshot",
-	EthStorageTrie:        "eth-storage-trie",
-	BitcoinBlock:          "bitcoin-block",
-	BitcoinTx:             "bitcoin-tx",
-	ZcashBlock:            "zcash-block",
-	ZcashTx:               "zcash-tx",
-	DecredBlock:           "decred-block",
-	DecredTx:              "decred-tx",
-	DashBlock:             "dash-block",
-	DashTx:                "dash-tx",
-	FilCommitmentUnsealed: "fil-commitment-unsealed",
-	FilCommitmentSealed:   "fil-commitment-sealed",
-	DagJOSE:               "dag-jose",
-	DagCOSE:               "dag-cose",
-}
-
 func assertEqual(t *testing.T, a, b Cid) {
 	if a.Type() != b.Type() {
 		t.Fatal("mismatch on type")
@@ -62,26 +26,6 @@ func assertEqual(t *testing.T, a, b Cid) {
 
 	if !bytes.Equal(a.Hash(), b.Hash()) {
 		t.Fatal("multihash mismatch")
-	}
-}
-
-func TestTable(t *testing.T) {
-	if len(tCodecs) != len(Codecs)-1 {
-		t.Errorf("Item count mismatch in the Table of Codec. Should be %d, got %d", len(tCodecs)+1, len(Codecs))
-	}
-
-	for k, v := range tCodecs {
-		if Codecs[v] != k {
-			t.Errorf("Table mismatch: 0x%x %s", k, v)
-		}
-	}
-}
-
-// The table returns cid.DagProtobuf for "v0"
-// so we test it apart
-func TestTableForV0(t *testing.T) {
-	if Codecs["v0"] != DagProtobuf {
-		t.Error("Table mismatch: Codecs[\"v0\"] should resolve to DagProtobuf (0x70)")
 	}
 }
 

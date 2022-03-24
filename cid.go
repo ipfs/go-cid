@@ -58,15 +58,9 @@ const (
 	DagJSON     = 0x0129 // https://ipld.io/docs/codecs/known/dag-json/
 	Libp2pKey   = 0x72   // https://github.com/libp2p/specs/blob/master/peer-ids/peer-ids.md#peer-ids
 
-	// generic, non-dag variants
-	Protobuf = 0x50
-	CBOR     = 0x51
-	JSON     = 0x0200
-
 	// other
 	GitRaw                = 0x78
 	DagJOSE               = 0x85 // https://ipld.io/specs/codecs/dag-jose/spec/
-	DagCOSE               = 0x86
 	EthBlock              = 0x90
 	EthBlockList          = 0x91
 	EthTxTrie             = 0x92
@@ -87,75 +81,6 @@ const (
 	FilCommitmentUnsealed = 0xf101
 	FilCommitmentSealed   = 0xf102
 )
-
-// Codecs maps the name of a codec to its type
-var Codecs = map[string]uint64{
-	"v0":                      DagProtobuf, // TODO: remove?
-	"raw":                     Raw,
-	"dag-pb":                  DagProtobuf,
-	"dag-cbor":                DagCBOR,
-	"dag-json":                DagJSON,
-	"libp2p-key":              Libp2pKey,
-	"protobuf":                Protobuf,
-	"cbor":                    CBOR,
-	"json":                    JSON,
-	"git-raw":                 GitRaw,
-	"eth-block":               EthBlock,
-	"eth-block-list":          EthBlockList,
-	"eth-tx-trie":             EthTxTrie,
-	"eth-tx":                  EthTx,
-	"eth-tx-receipt-trie":     EthTxReceiptTrie,
-	"eth-tx-receipt":          EthTxReceipt,
-	"eth-state-trie":          EthStateTrie,
-	"eth-account-snapshot":    EthAccountSnapshot,
-	"eth-storage-trie":        EthStorageTrie,
-	"bitcoin-block":           BitcoinBlock,
-	"bitcoin-tx":              BitcoinTx,
-	"zcash-block":             ZcashBlock,
-	"zcash-tx":                ZcashTx,
-	"decred-block":            DecredBlock,
-	"decred-tx":               DecredTx,
-	"dash-block":              DashBlock,
-	"dash-tx":                 DashTx,
-	"fil-commitment-unsealed": FilCommitmentUnsealed,
-	"fil-commitment-sealed":   FilCommitmentSealed,
-	"dag-jose":                DagJOSE,
-	"dag-cose":                DagCOSE,
-}
-
-// CodecToStr maps the numeric codec to its name
-var CodecToStr = map[uint64]string{
-	Raw:                   "raw",
-	DagProtobuf:           "dag-pb",
-	DagCBOR:               "dag-cbor",
-	DagJSON:               "dag-json",
-	Libp2pKey:             "libp2p-key",
-	Protobuf:              "protobuf",
-	CBOR:                  "cbor",
-	JSON:                  "json",
-	GitRaw:                "git-raw",
-	EthBlock:              "eth-block",
-	EthBlockList:          "eth-block-list",
-	EthTxTrie:             "eth-tx-trie",
-	EthTx:                 "eth-tx",
-	EthTxReceiptTrie:      "eth-tx-receipt-trie",
-	EthTxReceipt:          "eth-tx-receipt",
-	EthStateTrie:          "eth-state-trie",
-	EthAccountSnapshot:    "eth-account-snapshot",
-	EthStorageTrie:        "eth-storage-trie",
-	BitcoinBlock:          "bitcoin-block",
-	BitcoinTx:             "bitcoin-tx",
-	ZcashBlock:            "zcash-block",
-	ZcashTx:               "zcash-tx",
-	DecredBlock:           "decred-block",
-	DecredTx:              "decred-tx",
-	DashBlock:             "dash-block",
-	DashTx:                "dash-tx",
-	FilCommitmentUnsealed: "fil-commitment-unsealed",
-	FilCommitmentSealed:   "fil-commitment-sealed",
-	DagJOSE:               "dag-jose",
-	DagCOSE:               "dag-cose",
-}
 
 // tryNewCidV0 tries to convert a multihash into a CIDv0 CID and returns an
 // error on failure.
