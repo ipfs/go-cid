@@ -47,11 +47,12 @@ var (
 	ErrInvalidEncoding = errors.New("invalid base encoding")
 )
 
-// These are multicodec-packed content types. The should match
-// the codes described in the authoritative document:
-// https://github.com/multiformats/multicodec/blob/master/table.csv
+// Consts below are DEPRECATED and left only for legacy reasons:
+// <https://github.com/ipfs/go-cid/pull/137>
+// Modern code should use consts from go-multicodec instead:
+// <https://github.com/multiformats/go-multicodec>
 const (
-	// core IPLD
+	// common ones
 	Raw         = 0x55
 	DagProtobuf = 0x70   // https://ipld.io/docs/codecs/known/dag-pb/
 	DagCBOR     = 0x71   // https://ipld.io/docs/codecs/known/dag-cbor/
