@@ -47,19 +47,21 @@ var (
 	ErrInvalidEncoding = errors.New("invalid base encoding")
 )
 
-// These are multicodec-packed content types. The should match
-// the codes described in the authoritative document:
-// https://github.com/multiformats/multicodec/blob/master/table.csv
+// Consts below are DEPRECATED and left only for legacy reasons:
+// <https://github.com/ipfs/go-cid/pull/137>
+// Modern code should use consts from go-multicodec instead:
+// <https://github.com/multiformats/go-multicodec>
 const (
-	Raw = 0x55
+	// common ones
+	Raw         = 0x55
+	DagProtobuf = 0x70   // https://ipld.io/docs/codecs/known/dag-pb/
+	DagCBOR     = 0x71   // https://ipld.io/docs/codecs/known/dag-cbor/
+	DagJSON     = 0x0129 // https://ipld.io/docs/codecs/known/dag-json/
+	Libp2pKey   = 0x72   // https://github.com/libp2p/specs/blob/master/peer-ids/peer-ids.md#peer-ids
 
-	DagProtobuf = 0x70
-	DagCBOR     = 0x71
-	Libp2pKey   = 0x72
-
-	GitRaw = 0x78
-
-	DagJOSE               = 0x85
+	// other
+	GitRaw                = 0x78
+	DagJOSE               = 0x85 // https://ipld.io/specs/codecs/dag-jose/spec/
 	EthBlock              = 0x90
 	EthBlockList          = 0x91
 	EthTxTrie             = 0x92
@@ -80,64 +82,6 @@ const (
 	FilCommitmentUnsealed = 0xf101
 	FilCommitmentSealed   = 0xf102
 )
-
-// Codecs maps the name of a codec to its type
-var Codecs = map[string]uint64{
-	"v0":                      DagProtobuf,
-	"raw":                     Raw,
-	"protobuf":                DagProtobuf,
-	"cbor":                    DagCBOR,
-	"libp2p-key":              Libp2pKey,
-	"git-raw":                 GitRaw,
-	"eth-block":               EthBlock,
-	"eth-block-list":          EthBlockList,
-	"eth-tx-trie":             EthTxTrie,
-	"eth-tx":                  EthTx,
-	"eth-tx-receipt-trie":     EthTxReceiptTrie,
-	"eth-tx-receipt":          EthTxReceipt,
-	"eth-state-trie":          EthStateTrie,
-	"eth-account-snapshot":    EthAccountSnapshot,
-	"eth-storage-trie":        EthStorageTrie,
-	"bitcoin-block":           BitcoinBlock,
-	"bitcoin-tx":              BitcoinTx,
-	"zcash-block":             ZcashBlock,
-	"zcash-tx":                ZcashTx,
-	"decred-block":            DecredBlock,
-	"decred-tx":               DecredTx,
-	"dash-block":              DashBlock,
-	"dash-tx":                 DashTx,
-	"fil-commitment-unsealed": FilCommitmentUnsealed,
-	"fil-commitment-sealed":   FilCommitmentSealed,
-	"dag-jose":                DagJOSE,
-}
-
-// CodecToStr maps the numeric codec to its name
-var CodecToStr = map[uint64]string{
-	Raw:                   "raw",
-	DagProtobuf:           "protobuf",
-	DagCBOR:               "cbor",
-	GitRaw:                "git-raw",
-	EthBlock:              "eth-block",
-	EthBlockList:          "eth-block-list",
-	EthTxTrie:             "eth-tx-trie",
-	EthTx:                 "eth-tx",
-	EthTxReceiptTrie:      "eth-tx-receipt-trie",
-	EthTxReceipt:          "eth-tx-receipt",
-	EthStateTrie:          "eth-state-trie",
-	EthAccountSnapshot:    "eth-account-snapshot",
-	EthStorageTrie:        "eth-storage-trie",
-	BitcoinBlock:          "bitcoin-block",
-	BitcoinTx:             "bitcoin-tx",
-	ZcashBlock:            "zcash-block",
-	ZcashTx:               "zcash-tx",
-	DecredBlock:           "decred-block",
-	DecredTx:              "decred-tx",
-	DashBlock:             "dash-block",
-	DashTx:                "dash-tx",
-	FilCommitmentUnsealed: "fil-commitment-unsealed",
-	FilCommitmentSealed:   "fil-commitment-sealed",
-	DagJOSE:               "dag-jose",
-}
 
 // tryNewCidV0 tries to convert a multihash into a CIDv0 CID and returns an
 // error on failure.
