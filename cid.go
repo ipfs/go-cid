@@ -181,6 +181,15 @@ func Parse(v interface{}) (Cid, error) {
 	}
 }
 
+// MustParse calls Parse but will panic on error.
+func MustParse(v interface{}) Cid {
+	c, err := Parse(v)
+	if err != nil {
+		panic(err)
+	}
+	return c
+}
+
 // Decode parses a Cid-encoded string and returns a Cid object.
 // For CidV1, a Cid-encoded string is primarily a multibase string:
 //
