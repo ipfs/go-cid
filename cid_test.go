@@ -33,7 +33,7 @@ func TestPrefixSum(t *testing.T) {
 	// Test creating CIDs both manually and with Prefix.
 	// Tests: https://github.com/ipfs/go-cid/issues/83
 	for _, hashfun := range []uint64{
-		mh.IDENTITY, mh.SHA3, mh.SHA2_256,
+		mh.IDENTITY, mh.SHA3, mh.SHA2_256, mh.BLAKE3,
 	} {
 		h1, err := mh.Sum([]byte("TEST"), hashfun, -1)
 		if err != nil {

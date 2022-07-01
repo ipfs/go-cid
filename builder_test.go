@@ -31,7 +31,7 @@ func TestV0Builder(t *testing.T) {
 	}
 }
 
-func TestV1Builder(t *testing.T) {
+func TestV1BuilderSHA256(t *testing.T) {
 	data := []byte("this is some test content")
 
 	// Construct c1
@@ -43,6 +43,31 @@ func TestV1Builder(t *testing.T) {
 
 	// Construct c2
 	hash, err := mh.Sum(data, mh.SHA2_256, -1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	c2 := NewCidV1(DagCBOR, hash)
+
+	if !c1.Equals(c2) {
+		t.Fatal("cids mismatch")
+	}
+	if c1.Prefix() != c2.Prefix() {
+		t.Fatal("prefixes mismatch")
+	}
+}
+
+func TestV1BuilderBLAKE3(t *testing.T) {
+	data := []byte("this is some test content")
+
+	// Construct c1
+	format := V1Builder{Codec: DagCBOR, MhType: mh.BLAKE3}
+	c1, err := format.Sum(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Construct c2
+	hash, err := mh.Sum(data, mh.BLAKE3, 32) // @aschmamann do you think this is the right place to be controlling this? do we need more checks to do prevention elsewhere?
 	if err != nil {
 		t.Fatal(err)
 	}
