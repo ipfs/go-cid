@@ -378,7 +378,13 @@ func (c Cid) Hash() mh.Multihash {
 // Bytes returns the byte representation of a Cid.
 // The output of bytes can be parsed back into a Cid
 // with Cast().
+//
+// If c.Defined() == false, it return a nil slice and may not
+// be parsable with Cast().
 func (c Cid) Bytes() []byte {
+	if !c.Defined() {
+		return nil
+	}
 	return []byte(c.str)
 }
 
