@@ -30,6 +30,7 @@ import (
 	"strings"
 
 	mbase "github.com/multiformats/go-multibase"
+	"github.com/multiformats/go-multicodec"
 	mh "github.com/multiformats/go-multihash"
 	varint "github.com/multiformats/go-varint"
 )
@@ -82,6 +83,25 @@ const (
 	FilCommitmentUnsealed = 0xf101
 	FilCommitmentSealed   = 0xf102
 )
+
+// Codecs maps the name of a codec to its type
+// Deprecated: modern code should use consts from go-multicodec instead:
+// <https://github.com/multiformats/go-multicodec>
+var Codecs map[string]uint64
+
+// CodecToStr maps the numeric codec to its name
+// Deprecated: modern code should use consts from go-multicodec instead:
+// <https://github.com/multiformats/go-multicodec>
+var CodecToStr map[uint64]string
+
+func init() {
+	Codecs = make(map[string]uint64)
+	CodecToStr = make(map[uint64]string)
+	for _, code := range multicodec.KnownCodes() {
+		Codecs[code.String()] = uint64(code)
+		CodecToStr[uint64(code)] = code.String()
+	}
+}
 
 // tryNewCidV0 tries to convert a multihash into a CIDv0 CID and returns an
 // error on failure.
