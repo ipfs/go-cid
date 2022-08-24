@@ -114,7 +114,7 @@ func NewCidStr(version uint64, codecType uint64, mhash mh.Multihash) CidStr {
 //
 // For CidV1, the data buffer is in the form:
 //
-//     <version><codec-type><multihash>
+//	<version><codec-type><multihash>
 //
 // CidV0 are also supported. In particular, data buffers starting
 // with length 34 bytes, which starts with bytes [18,32...] are considered

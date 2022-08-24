@@ -39,7 +39,8 @@ type Cid interface {
 // and the Multihash length. It does not contains
 // any actual content information.
 // NOTE: The use -1 in MhLength to mean default length is deprecated,
-//   use the V0Builder or V1Builder structures instead
+//
+//	use the V0Builder or V1Builder structures instead
 type Prefix struct {
 	Version  uint64
 	Codec    uint64
