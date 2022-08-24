@@ -12,14 +12,14 @@ import (
 //
 // Sample results on linux amd64 go1.11beta:
 //
-//   BenchmarkCidMap_CidStr-8          100000             16317 ns/op
-//   BenchmarkCidMap_CidIface-8        100000             20516 ns/op
+//	BenchmarkCidMap_CidStr-8          100000             16317 ns/op
+//	BenchmarkCidMap_CidIface-8        100000             20516 ns/op
 //
 // With benchmem on:
 //
-//   BenchmarkCidMap_CidStr-8          100000             15579 ns/op           11223 B/op        207 allocs/op
-//   BenchmarkCidMap_CidIface-8        100000             19500 ns/op           12824 B/op        307 allocs/op
-//   BenchmarkCidMap_StrPlusHax-8      200000             10451 ns/op            7589 B/op        202 allocs/op
+//	BenchmarkCidMap_CidStr-8          100000             15579 ns/op           11223 B/op        207 allocs/op
+//	BenchmarkCidMap_CidIface-8        100000             19500 ns/op           12824 B/op        307 allocs/op
+//	BenchmarkCidMap_StrPlusHax-8      200000             10451 ns/op            7589 B/op        202 allocs/op
 //
 // We can see here that the impact of interface boxing is significant:
 // it increases the time taken to do the inserts to 133%, largely because
@@ -36,7 +36,6 @@ import (
 // re-arranges itself, it involves more or less an O(n) copy of the content
 // in addition to the alloc itself).  This isn't topical to the question of
 // whether or not interfaces are a good idea; just for contextualizing.
-//
 func BenchmarkCidMap_CidStr(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		mp := map[CidStr]int{}
