@@ -29,43 +29,6 @@ func assertEqual(t *testing.T, a, b Cid) {
 	}
 }
 
-func TestTable(t *testing.T) {
-	// test some known codecs, hard-wired here to make them a fixture that would
-	// need to be updated if they change elsewhere
-	for k, v := range map[uint64]string{
-		Raw:                   "raw",
-		DagProtobuf:           "dag-pb",
-		DagCBOR:               "dag-cbor",
-		DagJSON:               "dag-json",
-		Libp2pKey:             "libp2p-key",
-		GitRaw:                "git-raw",
-		EthBlock:              "eth-block",
-		EthBlockList:          "eth-block-list",
-		EthTxTrie:             "eth-tx-trie",
-		EthTx:                 "eth-tx",
-		EthTxReceiptTrie:      "eth-tx-receipt-trie",
-		EthTxReceipt:          "eth-tx-receipt",
-		EthStateTrie:          "eth-state-trie",
-		EthAccountSnapshot:    "eth-account-snapshot",
-		EthStorageTrie:        "eth-storage-trie",
-		BitcoinBlock:          "bitcoin-block",
-		BitcoinTx:             "bitcoin-tx",
-		ZcashBlock:            "zcash-block",
-		ZcashTx:               "zcash-tx",
-		DecredBlock:           "decred-block",
-		DecredTx:              "decred-tx",
-		DashBlock:             "dash-block",
-		DashTx:                "dash-tx",
-		FilCommitmentUnsealed: "fil-commitment-unsealed",
-		FilCommitmentSealed:   "fil-commitment-sealed",
-		DagJOSE:               "dag-jose",
-	} {
-		if Codecs[v] != k {
-			t.Errorf("Table mismatch: 0x%x %s", k, v)
-		}
-	}
-}
-
 func TestPrefixSum(t *testing.T) {
 	// Test creating CIDs both manually and with Prefix.
 	// Tests: https://github.com/ipfs/go-cid/issues/83
