@@ -2,6 +2,7 @@ package cid
 
 import (
 	"bytes"
+	crand "crypto/rand"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -441,7 +442,7 @@ func TestFuzzCid(t *testing.T) {
 	buf := make([]byte, 128)
 	for i := 0; i < 200; i++ {
 		s := rand.Intn(128)
-		rand.Read(buf[:s])
+		crand.Read(buf[:s])
 		_, _ = Cast(buf[:s])
 	}
 }
