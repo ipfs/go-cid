@@ -4,6 +4,7 @@ import (
 	"bytes"
 	crand "crypto/rand"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"math/rand"
@@ -227,6 +228,9 @@ func TestEmptyString(t *testing.T) {
 	if err == nil {
 		t.Fatal("shouldnt be able to parse an empty cid")
 	}
+	if !errors.Is(err, &ErrInvalidCid{}) {
+		t.Fatal("error must be ErrInvalidCid")
+	}
 }
 
 func TestV0Handling(t *testing.T) {
@@ -281,6 +285,9 @@ func TestV0ErrorCases(t *testing.T) {
 	_, err := Decode(badb58)
 	if err == nil {
 		t.Fatal("should have failed to decode that ref")
+	}
+	if !errors.Is(err, &ErrInvalidCid{}) {
+		t.Fatal("error must be ErrInvalidCid")
 	}
 }
 
@@ -749,6 +756,9 @@ func TestBadParse(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected to fail to parse an invalid CIDv1 CID")
 	}
+	if !errors.Is(err, &ErrInvalidCid{}) {
+		t.Fatal("error must be ErrInvalidCid")
+	}
 }
 
 func TestLoggable(t *testing.T) {
@@ -761,5 +771,17 @@ func TestLoggable(t *testing.T) {
 	expected["cid"] = c
 	if !reflect.DeepEqual(actual, expected) {
 		t.Fatalf("did not get expected loggable form (got %v)", actual)
+	}
+}
+
+func TestErrInvalidCid(t *testing.T) {
+	_, err := Decode("not-a-cid")
+	if err == nil {
+		t.Fatal("expected error")
+	}
+
+	is := errors.Is(err, &ErrInvalidCid{})
+	if !is {
+		t.Fatal("expected error to be ErrInvalidCid")
 	}
 }
