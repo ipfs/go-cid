@@ -4,6 +4,7 @@ import (
 	"bytes"
 	crand "crypto/rand"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"math/rand"
@@ -162,6 +163,9 @@ func TestBasesMarshaling(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected too-short error from ExtractEncoding")
 	}
+	if !errors.Is(err, ErrInvalidCid{}) {
+		t.Fatal("expected error to be ErrInvalidCid")
+	}
 	if ee != -1 {
 		t.Fatal("expected -1 from too-short ExtractEncoding")
 	}
@@ -227,6 +231,9 @@ func TestEmptyString(t *testing.T) {
 	if err == nil {
 		t.Fatal("shouldnt be able to parse an empty cid")
 	}
+	if !errors.Is(err, ErrInvalidCid{}) {
+		t.Fatal("error must be ErrInvalidCid")
+	}
 }
 
 func TestV0Handling(t *testing.T) {
@@ -281,6 +288,9 @@ func TestV0ErrorCases(t *testing.T) {
 	_, err := Decode(badb58)
 	if err == nil {
 		t.Fatal("should have failed to decode that ref")
+	}
+	if !errors.Is(err, ErrInvalidCid{}) {
+		t.Fatal("error must be ErrInvalidCid")
 	}
 }
 
@@ -372,6 +382,9 @@ func TestInvalidV0Prefix(t *testing.T) {
 		if err == nil {
 			t.Fatalf("should error (index %d)", i)
 		}
+		if !errors.Is(err, ErrInvalidCid{}) {
+			t.Fatal("expected error to be ErrInvalidCid")
+		}
 	}
 }
 
@@ -380,6 +393,9 @@ func TestBadPrefix(t *testing.T) {
 	_, err := p.Sum([]byte{0x00, 0x01, 0x03})
 	if err == nil {
 		t.Fatalf("expected error on v3 prefix Sum")
+	}
+	if !errors.Is(err, ErrInvalidCid{}) {
+		t.Fatal("expected error to be ErrInvalidCid")
 	}
 }
 
@@ -417,17 +433,29 @@ func TestBadPrefixFromBytes(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for bad byte 0")
 	}
+	if !errors.Is(err, ErrInvalidCid{}) {
+		t.Fatal("expected error to be ErrInvalidCid")
+	}
 	_, err = PrefixFromBytes([]byte{0x01, 0x80})
 	if err == nil {
 		t.Fatal("expected error for bad byte 1")
+	}
+	if !errors.Is(err, ErrInvalidCid{}) {
+		t.Fatal("expected error to be ErrInvalidCid")
 	}
 	_, err = PrefixFromBytes([]byte{0x01, 0x01, 0x80})
 	if err == nil {
 		t.Fatal("expected error for bad byte 2")
 	}
+	if !errors.Is(err, ErrInvalidCid{}) {
+		t.Fatal("expected error to be ErrInvalidCid")
+	}
 	_, err = PrefixFromBytes([]byte{0x01, 0x01, 0x01, 0x80})
 	if err == nil {
 		t.Fatal("expected error for bad byte 3")
+	}
+	if !errors.Is(err, ErrInvalidCid{}) {
+		t.Fatal("expected error to be ErrInvalidCid")
 	}
 }
 
@@ -454,6 +482,9 @@ func TestParse(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "can't parse 123 as Cid") {
 		t.Fatalf("expected int error, got %s", err.Error())
+	}
+	if !errors.Is(err, ErrInvalidCid{}) {
+		t.Fatalf("expected ErrInvalidCid, got %s", err.Error())
 	}
 
 	theHash := "QmdfTbBqBPQ7VNxZEYEj14VmRuZBkqFbiwReogJgS1zR1n"
@@ -572,16 +603,28 @@ func TestJsonRoundTrip(t *testing.T) {
 		t.Fatal("cids not equal for Cid")
 	}
 
-	if err = actual2.UnmarshalJSON([]byte("1")); err == nil {
+	err = actual2.UnmarshalJSON([]byte("1"))
+	if err == nil {
 		t.Fatal("expected error for too-short JSON")
 	}
-
-	if err = actual2.UnmarshalJSON([]byte(`{"nope":"nope"}`)); err == nil {
-		t.Fatal("expected error for bad CID JSON")
+	if !errors.Is(err, ErrInvalidCid{}) {
+		t.Fatal("expected error to be ErrInvalidCid")
 	}
 
-	if err = actual2.UnmarshalJSON([]byte(`bad "" json!`)); err == nil {
+	err = actual2.UnmarshalJSON([]byte(`{"nope":"nope"}`))
+	if err == nil {
+		t.Fatal("expected error for bad CID JSON")
+	}
+	if !errors.Is(err, ErrInvalidCid{}) {
+		t.Fatal("expected error to be ErrInvalidCid")
+	}
+
+	err = actual2.UnmarshalJSON([]byte(`bad "" json!`))
+	if err == nil {
 		t.Fatal("expected error for bad JSON")
+	}
+	if !errors.Is(err, ErrInvalidCid{}) {
+		t.Fatal("expected error to be ErrInvalidCid")
 	}
 
 	var actual3 Cid
@@ -749,6 +792,9 @@ func TestBadParse(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected to fail to parse an invalid CIDv1 CID")
 	}
+	if !errors.Is(err, ErrInvalidCid{}) {
+		t.Fatal("error must be ErrInvalidCid")
+	}
 }
 
 func TestLoggable(t *testing.T) {
@@ -762,4 +808,81 @@ func TestLoggable(t *testing.T) {
 	if !reflect.DeepEqual(actual, expected) {
 		t.Fatalf("did not get expected loggable form (got %v)", actual)
 	}
+}
+
+func TestErrInvalidCidIs(t *testing.T) {
+	for i, test := range []struct {
+		err    error
+		target error
+	}{
+		{&ErrInvalidCid{}, ErrInvalidCid{}},
+		{ErrInvalidCid{}, &ErrInvalidCid{}},
+		{ErrInvalidCid{}, ErrInvalidCid{}},
+		{&ErrInvalidCid{}, &ErrInvalidCid{}},
+	} {
+		if !errors.Is(test.err, test.target) {
+			t.Fatalf("expected error to be ErrInvalidCid, case %d", i)
+		}
+	}
+}
+
+func TestErrInvalidCid(t *testing.T) {
+	run := func(err error) {
+		if err == nil {
+			t.Fatal("expected error")
+		}
+
+		if !strings.HasPrefix(err.Error(), "invalid cid: ") {
+			t.Fatal(`expected error message to contain "invalid cid: "`)
+		}
+
+		is := errors.Is(err, ErrInvalidCid{})
+		if !is {
+			t.Fatal("expected error to be ErrInvalidCid")
+		}
+
+		if !errors.Is(err, &ErrInvalidCid{}) {
+			t.Fatal("expected error to be &ErrInvalidCid")
+		}
+	}
+
+	_, err := Decode("")
+	run(err)
+
+	_, err = Decode("not-a-cid")
+	run(err)
+
+	_, err = Decode("bafyInvalid")
+	run(err)
+
+	_, err = Decode("QmdfTbBqBPQ7VNxZEYEj14VmRuZBkqFbiwReogJgS1zIII")
+	run(err)
+
+	_, err = Cast([]byte("invalid"))
+	run(err)
+
+	_, err = Parse("not-a-cid")
+	run(err)
+
+	_, err = Parse("bafyInvalid")
+	run(err)
+
+	_, err = Parse("QmdfTbBqBPQ7VNxZEYEj14VmRuZBkqFbiwReogJgS1zIII")
+	run(err)
+
+	_, err = Parse(123)
+	run(err)
+
+	_, _, err = CidFromBytes([]byte("invalid"))
+	run(err)
+
+	_, err = Prefix{}.Sum([]byte("data"))
+	run(err)
+
+	_, err = PrefixFromBytes([]byte{0x80})
+	run(err)
+
+	_, err = ExtractEncoding("invalid ")
+	run(err)
+
 }
