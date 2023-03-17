@@ -228,7 +228,7 @@ func TestEmptyString(t *testing.T) {
 	if err == nil {
 		t.Fatal("shouldnt be able to parse an empty cid")
 	}
-	if !errors.Is(err, &ErrInvalidCid{}) {
+	if !errors.Is(err, ErrInvalidCid{}) {
 		t.Fatal("error must be ErrInvalidCid")
 	}
 }
@@ -286,7 +286,7 @@ func TestV0ErrorCases(t *testing.T) {
 	if err == nil {
 		t.Fatal("should have failed to decode that ref")
 	}
-	if !errors.Is(err, &ErrInvalidCid{}) {
+	if !errors.Is(err, ErrInvalidCid{}) {
 		t.Fatal("error must be ErrInvalidCid")
 	}
 }
@@ -461,6 +461,9 @@ func TestParse(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "can't parse 123 as Cid") {
 		t.Fatalf("expected int error, got %s", err.Error())
+	}
+	if !errors.Is(err, ErrInvalidCid{}) {
+		t.Fatalf("expected ErrInvalidCid, got %s", err.Error())
 	}
 
 	theHash := "QmdfTbBqBPQ7VNxZEYEj14VmRuZBkqFbiwReogJgS1zR1n"
@@ -756,7 +759,7 @@ func TestBadParse(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected to fail to parse an invalid CIDv1 CID")
 	}
-	if !errors.Is(err, &ErrInvalidCid{}) {
+	if !errors.Is(err, ErrInvalidCid{}) {
 		t.Fatal("error must be ErrInvalidCid")
 	}
 }
@@ -780,7 +783,7 @@ func TestErrInvalidCid(t *testing.T) {
 		t.Fatal("expected error")
 	}
 
-	is := errors.Is(err, &ErrInvalidCid{})
+	is := errors.Is(err, ErrInvalidCid{})
 	if !is {
 		t.Fatal("expected error to be ErrInvalidCid")
 	}
