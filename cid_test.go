@@ -783,6 +783,20 @@ func TestBadCidInput(t *testing.T) {
 	}
 }
 
+func TestFromReaderNoData(t *testing.T) {
+	// Reading no data from io.Reader should return io.EOF, not ErrInvalidCid.
+	n, cid, err := CidFromReader(bytes.NewReader(nil))
+	if err != io.EOF {
+		t.Fatal("Expected io.EOF error")
+	}
+	if cid != Undef {
+		t.Fatal("Expected Undef CID")
+	}
+	if n != 0 {
+		t.Fatal("Expected 0 data")
+	}
+}
+
 func TestBadParse(t *testing.T) {
 	hash, err := mh.Sum([]byte("foobar"), mh.SHA3_256, -1)
 	if err != nil {

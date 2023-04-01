@@ -727,6 +727,10 @@ func CidFromReader(r io.Reader) (int, Cid, error) {
 	// The varint package wants a io.ByteReader, so we must wrap our io.Reader.
 	vers, err := varint.ReadUvarint(br)
 	if err != nil {
+		if err == io.EOF {
+			// No data; not an invalid CID.
+			return 0, Undef, err
+		}
 		return len(br.dst), Undef, ErrInvalidCid{err}
 	}
 
