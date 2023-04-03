@@ -728,7 +728,8 @@ func CidFromReader(r io.Reader) (int, Cid, error) {
 	vers, err := varint.ReadUvarint(br)
 	if err != nil {
 		if err == io.EOF {
-			// No data; not an invalid CID.
+			// First-byte read in ReadUvarint errors with io.EOF, so reader has no data.
+			// Subsequent reads with an EOF will return io.ErrUnexpectedEOF and be wrapped here.
 			return 0, Undef, err
 		}
 		return len(br.dst), Undef, ErrInvalidCid{err}
