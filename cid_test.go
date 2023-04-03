@@ -795,6 +795,16 @@ func TestFromReaderNoData(t *testing.T) {
 	if n != 0 {
 		t.Fatal("Expected 0 data")
 	}
+
+	// Read byte indicatiing more data to and check error is ErrInvalidCid.
+	_, _, err = CidFromReader(bytes.NewReader([]byte{0x80}))
+	if !errors.Is(err, ErrInvalidCid{}) {
+		t.Fatal("Expected ErrInvalidCid error")
+	}
+	// Check for expected wrapped error.
+	if !errors.Is(err, io.ErrUnexpectedEOF) {
+		t.Fatal("Expected error", io.ErrUnexpectedEOF)
+	}
 }
 
 func TestBadParse(t *testing.T) {
