@@ -3,7 +3,7 @@ module github.com/ipfs/go-cid
 require (
 	github.com/multiformats/go-multibase v0.2.0
 	github.com/multiformats/go-multihash v0.2.1
-	github.com/multiformats/go-varint v0.0.6
+	github.com/multiformats/go-varint v0.0.7
 )
 
 require (
