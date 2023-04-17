@@ -81,6 +81,10 @@ const (
 	DagJSON     = 0x0129 // https://ipld.io/docs/codecs/known/dag-json/
 	Libp2pKey   = 0x72   // https://github.com/libp2p/specs/blob/master/peer-ids/peer-ids.md#peer-ids
 
+	// Non "dag" variants of common codecs
+	CBOR = 0x51   // Regular (arbitrary) CBOR.
+	JSON = 0x0200 // Regular (arbitrary) JSON.
+
 	// other
 	GitRaw                = 0x78
 	DagJOSE               = 0x85 // https://ipld.io/specs/codecs/dag-jose/spec/
