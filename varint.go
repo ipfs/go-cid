@@ -15,7 +15,7 @@ import (
 // number of bytes read (> 0). If an error occurred, then 0 is
 // returned for both the value and the number of bytes read, and an
 // error is returned.
-func uvarint(buf string) (uint64, int, error) {
+func uvarint[S Storage](buf S) (uint64, int, error) {
 	var x uint64
 	var s uint
 	// we have a binary string so we can't use a range loop

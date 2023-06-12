@@ -22,7 +22,6 @@ package cid
 import (
 	"bytes"
 	"encoding"
-	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -107,17 +106,18 @@ const (
 
 // tryNewCidV0 tries to convert a multihash into a CIDv0 CID and returns an
 // error on failure.
-func tryNewCidV0(mhash mh.Multihash) (Cid, error) {
+func tryNewCidV0[S Storage](mhash mh.Multihash) (CidOf[S], error) {
+	var zero CidOf[S]
 	// Need to make sure hash is valid for CidV0 otherwise we will
 	// incorrectly detect it as CidV1 in the Version() method
 	dec, err := mh.Decode(mhash)
 	if err != nil {
-		return Undef, ErrInvalidCid{err}
+		return zero, ErrInvalidCid{err}
 	}
 	if dec.Code != mh.SHA2_256 || dec.Length != 32 {
-		return Undef, ErrInvalidCid{fmt.Errorf("invalid hash for cidv0 %d-%d", dec.Code, dec.Length)}
+		return zero, ErrInvalidCid{fmt.Errorf("invalid hash for cidv0 %d-%d", dec.Code, dec.Length)}
 	}
-	return Cid{string(mhash)}, nil
+	return CidOf[S]{S(mhash)}, nil
 }
 
 // NewCidV0 returns a Cid-wrapped multihash.
@@ -127,7 +127,12 @@ func tryNewCidV0(mhash mh.Multihash) (Cid, error) {
 //
 // Panics if the multihash isn't sha2-256.
 func NewCidV0(mhash mh.Multihash) Cid {
-	c, err := tryNewCidV0(mhash)
+	return NewCidV0Of[string](mhash)
+}
+
+// NewCidV0Of is like [NewCidV0].
+func NewCidV0Of[S Storage](mhash mh.Multihash) CidOf[S] {
+	c, err := tryNewCidV0[S](mhash)
 	if err != nil {
 		panic(err)
 	}
@@ -139,25 +144,25 @@ func NewCidV0(mhash mh.Multihash) Cid {
 //
 // Panics if the multihash is invalid.
 func NewCidV1(codecType uint64, mhash mh.Multihash) Cid {
-	hashlen := len(mhash)
+	return NewCidV1Of[string](codecType, mhash)
+}
 
+// NewCidV1Of is like [NewCidV1].
+func NewCidV1Of[S Storage](codecType uint64, mhash mh.Multihash) CidOf[S] {
 	// Two 8 bytes (max) numbers plus hash.
 	// We use strings.Builder to only allocate once.
-	var b strings.Builder
-	b.Grow(1 + varint.UvarintSize(codecType) + hashlen)
+	const versionSize = 1
+	b := make([]byte, versionSize+varint.UvarintSize(codecType)+len(mhash))
+	b[0] = 1
 
-	b.WriteByte(1)
+	n := varint.PutUvarint(b[versionSize:], codecType)
 
-	var buf [binary.MaxVarintLen64]byte
-	n := varint.PutUvarint(buf[:], codecType)
-	b.Write(buf[:n])
-
-	cn, _ := b.Write(mhash)
-	if cn != hashlen {
+	cn := copy(b[versionSize+n:], mhash)
+	if cn != len(mhash) {
 		panic("copy hash length is inconsistent")
 	}
 
-	return Cid{b.String()}
+	return CidOf[S]{S(b)}
 }
 
 var (
@@ -170,42 +175,72 @@ var (
 // Cid represents a self-describing content addressed
 // identifier. It is formed by a Version, a Codec (which indicates
 // a multicodec-packed content type) and a Multihash.
-type Cid struct{ str string }
+type Cid = CidOf[string]
 
-// Undef can be used to represent a nil or undefined Cid, using Cid{}
+// Storage defines usable backing containers for [CidOf].
+// Using [string] allows for compile-time immutable CIDs that are comparable.
+// Using a byte slice allows for aliasable CIDs and zero allocation.
+// When a byte slice is used it MUST NOT be modified while the cid is alive.
+type Storage interface{ string | []byte }
+
+// CidOf is like [Cid] except it's backing array is generic.
+type CidOf[S Storage] struct{ storage S }
+
+// Undef can be used to represent a nil or undefined [Cid], using Cid{}
 // directly is also acceptable.
 var Undef = Cid{}
+
+// ToString is a helper that converts to a [string] backed CID.
+func (c CidOf[S]) ToString() Cid {
+	return Cid{string(c.storage)}
+}
+
+// ToBytes is a helper that converts to a byte slice backed CID.
+func (c CidOf[S]) ToBytes() CidOf[[]byte] {
+	return CidOf[[]byte]{[]byte(c.storage)}
+}
 
 // Defined returns true if a Cid is defined
 // Calling any other methods on an undefined Cid will result in
 // undefined behavior.
-func (c Cid) Defined() bool {
-	return c.str != ""
+func (c CidOf[S]) Defined() bool {
+	return len(c.storage) != 0
 }
 
 // Parse is a short-hand function to perform Decode, Cast etc... on
 // a generic interface{} type.
 func Parse(v interface{}) (Cid, error) {
+	return ParseOf[string](v)
+}
+
+// ParseOf is like [Parse].
+func ParseOf[S Storage](v interface{}) (CidOf[S], error) {
 	switch v2 := v.(type) {
 	case string:
 		if strings.Contains(v2, "/ipfs/") {
-			return Decode(strings.Split(v2, "/ipfs/")[1])
+			return DecodeOf[S](strings.Split(v2, "/ipfs/")[1])
 		}
-		return Decode(v2)
+		return DecodeOf[S](v2)
 	case []byte:
-		return Cast(v2)
+		return CastOf[S](v2)
 	case mh.Multihash:
-		return tryNewCidV0(v2)
-	case Cid:
+		return tryNewCidV0[S](v2)
+	case CidOf[S]:
 		return v2, nil
 	default:
-		return Undef, ErrInvalidCid{fmt.Errorf("can't parse %+v as Cid", v2)}
+		var zero CidOf[S]
+		return zero, ErrInvalidCid{fmt.Errorf("can't parse %+v as Cid", v2)}
 	}
 }
 
 // MustParse calls Parse but will panic on error.
 func MustParse(v interface{}) Cid {
-	c, err := Parse(v)
+	return MustParseOf[string](v)
+}
+
+// MustParseOf is like [MustParse].
+func MustParseOf[S Storage](v interface{}) CidOf[S] {
+	c, err := ParseOf[S](v)
 	if err != nil {
 		panic(err)
 	}
@@ -225,25 +260,31 @@ func MustParse(v interface{}) Cid {
 // starting with "Qm" are considered CidV0 and treated directly
 // as B58-encoded multihashes.
 func Decode(v string) (Cid, error) {
+	return DecodeOf[string](v)
+}
+
+// DecodeOf is like [Decode].
+func DecodeOf[S Storage](v string) (CidOf[S], error) {
+	var zero CidOf[S]
 	if len(v) < 2 {
-		return Undef, ErrCidTooShort
+		return zero, ErrCidTooShort
 	}
 
 	if len(v) == 46 && v[:2] == "Qm" {
 		hash, err := mh.FromB58String(v)
 		if err != nil {
-			return Undef, ErrInvalidCid{err}
+			return zero, ErrInvalidCid{err}
 		}
 
-		return tryNewCidV0(hash)
+		return tryNewCidV0[S](hash)
 	}
 
 	_, data, err := mbase.Decode(v)
 	if err != nil {
-		return Undef, ErrInvalidCid{err}
+		return zero, ErrInvalidCid{err}
 	}
 
-	return Cast(data)
+	return CastOf[S](data)
 }
 
 // Extract the encoding from a Cid.  If Decode on the same string did
@@ -280,13 +321,19 @@ func ExtractEncoding(v string) (mbase.Encoding, error) {
 // Please use decode when parsing a regular Cid string, as Cast does not
 // expect multibase-encoded data. Cast accepts the output of Cid.Bytes().
 func Cast(data []byte) (Cid, error) {
-	nr, c, err := CidFromBytes(data)
+	return CastOf[string](data)
+}
+
+// CastOf is like [Cast].
+func CastOf[S Storage](data []byte) (CidOf[S], error) {
+	var zero CidOf[S]
+	nr, c, err := CidFromBytesOf[S](data)
 	if err != nil {
-		return Undef, ErrInvalidCid{err}
+		return zero, ErrInvalidCid{err}
 	}
 
 	if nr != len(data) {
-		return Undef, ErrInvalidCid{fmt.Errorf("trailing bytes in data buffer passed to cid Cast")}
+		return zero, ErrInvalidCid{fmt.Errorf("trailing bytes in data buffer passed to cid Cast")}
 	}
 
 	return c, nil
@@ -294,48 +341,48 @@ func Cast(data []byte) (Cid, error) {
 
 // UnmarshalBinary is equivalent to Cast(). It implements the
 // encoding.BinaryUnmarshaler interface.
-func (c *Cid) UnmarshalBinary(data []byte) error {
-	casted, err := Cast(data)
+func (c *CidOf[S]) UnmarshalBinary(data []byte) error {
+	casted, err := CastOf[S](data)
 	if err != nil {
 		return err
 	}
-	c.str = casted.str
+	c.storage = casted.storage
 	return nil
 }
 
 // UnmarshalText is equivalent to Decode(). It implements the
 // encoding.TextUnmarshaler interface.
-func (c *Cid) UnmarshalText(text []byte) error {
-	decodedCid, err := Decode(string(text))
+func (c *CidOf[S]) UnmarshalText(text []byte) error {
+	decodedCid, err := DecodeOf[S](string(text))
 	if err != nil {
 		return err
 	}
-	c.str = decodedCid.str
+	c.storage = decodedCid.storage
 	return nil
 }
 
 // Version returns the Cid version.
-func (c Cid) Version() uint64 {
-	if len(c.str) == 34 && c.str[0] == 18 && c.str[1] == 32 {
+func (c CidOf[S]) Version() uint64 {
+	if len(c.storage) == 34 && c.storage[0] == 18 && c.storage[1] == 32 {
 		return 0
 	}
 	return 1
 }
 
 // Type returns the multicodec-packed content type of a Cid.
-func (c Cid) Type() uint64 {
+func (c CidOf[S]) Type() uint64 {
 	if c.Version() == 0 {
 		return DagProtobuf
 	}
-	_, n, _ := uvarint(c.str)
-	codec, _, _ := uvarint(c.str[n:])
+	_, n, _ := uvarint(c.storage)
+	codec, _, _ := uvarint(c.storage[n:])
 	return codec
 }
 
 // String returns the default string representation of a
 // Cid. Currently, Base32 is used for CIDV1 as the encoding for the
 // multibase string, Base58 is used for CIDV0.
-func (c Cid) String() string {
+func (c CidOf[S]) String() string {
 	switch c.Version() {
 	case 0:
 		return c.Hash().B58String()
@@ -353,7 +400,7 @@ func (c Cid) String() string {
 
 // String returns the string representation of a Cid
 // encoded is selected base
-func (c Cid) StringOfBase(base mbase.Encoding) (string, error) {
+func (c CidOf[S]) StringOfBase(base mbase.Encoding) (string, error) {
 	switch c.Version() {
 	case 0:
 		if base != mbase.Base58BTC {
@@ -370,7 +417,7 @@ func (c Cid) StringOfBase(base mbase.Encoding) (string, error) {
 // Encode return the string representation of a Cid in a given base
 // when applicable.  Version 0 Cid's are always in Base58 as they do
 // not take a multibase prefix.
-func (c Cid) Encode(base mbase.Encoder) string {
+func (c CidOf[S]) Encode(base mbase.Encoder) string {
 	switch c.Version() {
 	case 0:
 		return c.Hash().B58String()
@@ -382,7 +429,7 @@ func (c Cid) Encode(base mbase.Encoder) string {
 }
 
 // Hash returns the multihash contained by a Cid.
-func (c Cid) Hash() mh.Multihash {
+func (c CidOf[S]) Hash() mh.Multihash {
 	bytes := c.Bytes()
 
 	if c.Version() == 0 {
@@ -403,11 +450,11 @@ func (c Cid) Hash() mh.Multihash {
 //
 // If c.Defined() == false, it return a nil slice and may not
 // be parsable with Cast().
-func (c Cid) Bytes() []byte {
+func (c CidOf[S]) Bytes() []byte {
 	if !c.Defined() {
 		return nil
 	}
-	return []byte(c.str)
+	return []byte(c.storage)
 }
 
 // ByteLen returns the length of the CID in bytes.
@@ -415,20 +462,25 @@ func (c Cid) Bytes() []byte {
 // and should therefore be preferred.
 //
 // (See also the WriteTo method for other important operations that work without allocation.)
-func (c Cid) ByteLen() int {
-	return len(c.str)
+func (c CidOf[S]) ByteLen() int {
+	return len(c.storage)
 }
 
 // WriteBytes writes the CID bytes to the given writer.
 // This method works without incurring any allocation.
 //
 // (See also the ByteLen method for other important operations that work without allocation.)
-func (c Cid) WriteBytes(w io.Writer) (int, error) {
-	n, err := io.WriteString(w, c.str)
+func (c CidOf[S]) WriteBytes(w io.Writer) (n int, err error) {
+	switch v := any(c.storage).(type) {
+	case string:
+		n, err = io.WriteString(w, v)
+	case []byte:
+		n, err = w.Write(v)
+	}
 	if err != nil {
 		return n, err
 	}
-	if n != len(c.str) {
+	if n != len(c.storage) {
 		return n, fmt.Errorf("failed to write entire cid string")
 	}
 	return n, nil
@@ -436,25 +488,41 @@ func (c Cid) WriteBytes(w io.Writer) (int, error) {
 
 // MarshalBinary is equivalent to Bytes(). It implements the
 // encoding.BinaryMarshaler interface.
-func (c Cid) MarshalBinary() ([]byte, error) {
+func (c CidOf[S]) MarshalBinary() ([]byte, error) {
 	return c.Bytes(), nil
 }
 
 // MarshalText is equivalent to String(). It implements the
 // encoding.TextMarshaler interface.
-func (c Cid) MarshalText() ([]byte, error) {
+func (c CidOf[S]) MarshalText() ([]byte, error) {
 	return []byte(c.String()), nil
 }
 
 // Equals checks that two Cids are the same.
 // In order for two Cids to be considered equal, the
 // Version, the Codec and the Multihash must match.
-func (c Cid) Equals(o Cid) bool {
-	return c == o
+func (c CidOf[S]) Equals(o CidOf[S]) bool {
+	return string(c.storage) == string(o.storage)
+}
+
+// EqualsString is like [Equals] but it takes in a [Cid] to compare to.
+func (c CidOf[S]) EqualsString(o Cid) bool {
+	return string(c.storage) == string(o.storage)
+}
+
+// EqualsBytes is like [Equals] but it takes in a [CidOf[[]byte]] to compare to.
+func (c CidOf[S]) EqualsBytes(o CidOf[[]byte]) bool {
+	return string(c.storage) == string(o.storage)
+}
+
+// Equals is like [CidOf.Equals] but it is a function to allow to compare two different cids
+// as go doesn't support generic methods.
+func Equals[A, B Storage](a CidOf[A], b CidOf[B]) bool {
+	return string(a.storage) == string(b.storage)
 }
 
 // UnmarshalJSON parses the JSON representation of a Cid.
-func (c *Cid) UnmarshalJSON(b []byte) error {
+func (c *CidOf[S]) UnmarshalJSON(b []byte) error {
 	if len(b) < 2 {
 		return ErrInvalidCid{fmt.Errorf("invalid cid json blob")}
 	}
@@ -467,7 +535,7 @@ func (c *Cid) UnmarshalJSON(b []byte) error {
 		return ErrInvalidCid{err}
 	}
 	if objptr == nil {
-		*c = Cid{}
+		*c = CidOf[S]{}
 		return nil
 	}
 
@@ -475,7 +543,7 @@ func (c *Cid) UnmarshalJSON(b []byte) error {
 		return ErrInvalidCid{fmt.Errorf("cid was incorrectly formatted")}
 	}
 
-	out, err := Decode(obj.CidTarget)
+	out, err := DecodeOf[S](obj.CidTarget)
 	if err != nil {
 		return ErrInvalidCid{err}
 	}
@@ -491,7 +559,7 @@ func (c *Cid) UnmarshalJSON(b []byte) error {
 //
 // Note that this formatting comes from the IPLD specification
 // (https://github.com/ipld/specs/tree/master/ipld)
-func (c Cid) MarshalJSON() ([]byte, error) {
+func (c CidOf[S]) MarshalJSON() ([]byte, error) {
 	if !c.Defined() {
 		return []byte("null"), nil
 	}
@@ -499,20 +567,20 @@ func (c Cid) MarshalJSON() ([]byte, error) {
 }
 
 // KeyString returns the binary representation of the Cid as a string
-func (c Cid) KeyString() string {
-	return c.str
+func (c CidOf[S]) KeyString() string {
+	return string(c.storage)
 }
 
 // Loggable returns a Loggable (as defined by
 // https://godoc.org/github.com/ipfs/go-log).
-func (c Cid) Loggable() map[string]interface{} {
+func (c CidOf[S]) Loggable() map[string]interface{} {
 	return map[string]interface{}{
 		"cid": c,
 	}
 }
 
 // Prefix builds and returns a Prefix out of a Cid.
-func (c Cid) Prefix() Prefix {
+func (c CidOf[S]) Prefix() Prefix {
 	if c.Version() == 0 {
 		return Prefix{
 			MhType:   mh.SHA2_256,
@@ -523,13 +591,13 @@ func (c Cid) Prefix() Prefix {
 	}
 
 	offset := 0
-	version, n, _ := uvarint(c.str[offset:])
+	version, n, _ := uvarint(c.storage[offset:])
 	offset += n
-	codec, n, _ := uvarint(c.str[offset:])
+	codec, n, _ := uvarint(c.storage[offset:])
 	offset += n
-	mhtype, n, _ := uvarint(c.str[offset:])
+	mhtype, n, _ := uvarint(c.storage[offset:])
 	offset += n
-	mhlen, _, _ := uvarint(c.str[offset:])
+	mhlen, _, _ := uvarint(c.storage[offset:])
 
 	return Prefix{
 		MhType:   mhtype,
@@ -635,41 +703,46 @@ func PrefixFromBytes(buf []byte) (Prefix, error) {
 }
 
 func CidFromBytes(data []byte) (int, Cid, error) {
+	return CidFromBytesOf[string](data)
+}
+
+func CidFromBytesOf[S Storage](data []byte) (int, CidOf[S], error) {
+	var zero CidOf[S]
 	if len(data) > 2 && data[0] == mh.SHA2_256 && data[1] == 32 {
 		if len(data) < 34 {
-			return 0, Undef, ErrInvalidCid{fmt.Errorf("not enough bytes for cid v0")}
+			return 0, zero, ErrInvalidCid{fmt.Errorf("not enough bytes for cid v0")}
 		}
 
 		h, err := mh.Cast(data[:34])
 		if err != nil {
-			return 0, Undef, ErrInvalidCid{err}
+			return 0, zero, ErrInvalidCid{err}
 		}
 
-		return 34, Cid{string(h)}, nil
+		return 34, CidOf[S]{S(h)}, nil
 	}
 
 	vers, n, err := varint.FromUvarint(data)
 	if err != nil {
-		return 0, Undef, ErrInvalidCid{err}
+		return 0, zero, ErrInvalidCid{err}
 	}
 
 	if vers != 1 {
-		return 0, Undef, ErrInvalidCid{fmt.Errorf("expected 1 as the cid version number, got: %d", vers)}
+		return 0, zero, ErrInvalidCid{fmt.Errorf("expected 1 as the cid version number, got: %d", vers)}
 	}
 
 	_, cn, err := varint.FromUvarint(data[n:])
 	if err != nil {
-		return 0, Undef, ErrInvalidCid{err}
+		return 0, zero, ErrInvalidCid{err}
 	}
 
 	mhnr, _, err := mh.MHFromBytes(data[n+cn:])
 	if err != nil {
-		return 0, Undef, ErrInvalidCid{err}
+		return 0, zero, ErrInvalidCid{err}
 	}
 
 	l := n + cn + mhnr
 
-	return l, Cid{string(data[0:l])}, nil
+	return l, CidOf[S]{S(data[:l])}, nil
 }
 
 func toBufByteReader(r io.Reader, dst []byte) *bufByteReader {
@@ -721,6 +794,12 @@ func (r *bufByteReader) ReadByte() (byte, error) {
 // If the Reader is found to yield zero bytes, an io.EOF error is returned directly, in all
 // other error cases, an ErrInvalidCid, wrapping the original error, is returned.
 func CidFromReader(r io.Reader) (int, Cid, error) {
+	return CidFromReaderOf[string](r)
+}
+
+// CidFromReaderOf is like [CidFromReader].
+func CidFromReaderOf[S Storage](r io.Reader) (int, CidOf[S], error) {
+	var zero CidOf[S]
 	// 64 bytes is enough for any CIDv0,
 	// and it's enough for most CIDv1s in practice.
 	// If the digest is too long, we'll allocate more.
@@ -733,34 +812,34 @@ func CidFromReader(r io.Reader) (int, Cid, error) {
 		if err == io.EOF {
 			// First-byte read in ReadUvarint errors with io.EOF, so reader has no data.
 			// Subsequent reads with an EOF will return io.ErrUnexpectedEOF and be wrapped here.
-			return 0, Undef, err
+			return 0, zero, err
 		}
-		return len(br.dst), Undef, ErrInvalidCid{err}
+		return len(br.dst), zero, ErrInvalidCid{err}
 	}
 
 	// If we have a CIDv0, read the rest of the bytes and cast the buffer.
 	if vers == mh.SHA2_256 {
 		if n, err := io.ReadFull(r, br.dst[1:34]); err != nil {
-			return len(br.dst) + n, Undef, ErrInvalidCid{err}
+			return len(br.dst) + n, zero, ErrInvalidCid{err}
 		}
 
 		br.dst = br.dst[:34]
 		h, err := mh.Cast(br.dst)
 		if err != nil {
-			return len(br.dst), Undef, ErrInvalidCid{err}
+			return len(br.dst), zero, ErrInvalidCid{err}
 		}
 
-		return len(br.dst), Cid{string(h)}, nil
+		return len(br.dst), CidOf[S]{S(h)}, nil
 	}
 
 	if vers != 1 {
-		return len(br.dst), Undef, ErrInvalidCid{fmt.Errorf("expected 1 as the cid version number, got: %d", vers)}
+		return len(br.dst), zero, ErrInvalidCid{fmt.Errorf("expected 1 as the cid version number, got: %d", vers)}
 	}
 
 	// CID block encoding multicodec.
 	_, err = varint.ReadUvarint(br)
 	if err != nil {
-		return len(br.dst), Undef, ErrInvalidCid{err}
+		return len(br.dst), zero, ErrInvalidCid{err}
 	}
 
 	// We could replace most of the code below with go-multihash's ReadMultihash.
@@ -771,19 +850,19 @@ func CidFromReader(r io.Reader) (int, Cid, error) {
 	// Multihash hash function code.
 	_, err = varint.ReadUvarint(br)
 	if err != nil {
-		return len(br.dst), Undef, ErrInvalidCid{err}
+		return len(br.dst), zero, ErrInvalidCid{err}
 	}
 
 	// Multihash digest length.
 	mhl, err := varint.ReadUvarint(br)
 	if err != nil {
-		return len(br.dst), Undef, ErrInvalidCid{err}
+		return len(br.dst), zero, ErrInvalidCid{err}
 	}
 
 	// Refuse to make large allocations to prevent OOMs due to bugs.
 	const maxDigestAlloc = 32 << 20 // 32MiB
 	if mhl > maxDigestAlloc {
-		return len(br.dst), Undef, ErrInvalidCid{fmt.Errorf("refusing to allocate %d bytes for a digest", mhl)}
+		return len(br.dst), zero, ErrInvalidCid{fmt.Errorf("refusing to allocate %d bytes for a digest", mhl)}
 	}
 
 	// Fine to convert mhl to int, given maxDigestAlloc.
@@ -802,7 +881,7 @@ func CidFromReader(r io.Reader) (int, Cid, error) {
 	if n, err := io.ReadFull(r, br.dst[prefixLength:cidLength]); err != nil {
 		// We can't use len(br.dst) here,
 		// as we've only read n bytes past prefixLength.
-		return prefixLength + n, Undef, ErrInvalidCid{err}
+		return prefixLength + n, zero, ErrInvalidCid{err}
 	}
 
 	// This simply ensures the multihash is valid.
@@ -810,8 +889,8 @@ func CidFromReader(r io.Reader) (int, Cid, error) {
 	// for now, it helps ensure consistency with CidFromBytes.
 	_, _, err = mh.MHFromBytes(br.dst[mhStart:])
 	if err != nil {
-		return len(br.dst), Undef, ErrInvalidCid{err}
+		return len(br.dst), zero, ErrInvalidCid{err}
 	}
 
-	return len(br.dst), Cid{string(br.dst)}, nil
+	return len(br.dst), CidOf[S]{S(br.dst)}, nil
 }
