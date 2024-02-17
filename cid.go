@@ -607,6 +607,11 @@ func (c CidOf[S]) Prefix() Prefix {
 	}
 }
 
+// Append appends the cid to some slice of bytes.
+func (c CidOf[S]) Append(in []byte) []byte {
+	return append(in, c.storage...)
+}
+
 // Prefix represents all the metadata of a Cid,
 // that is, the Version, the Codec, the Multihash type
 // and the Multihash length. It does not contains
