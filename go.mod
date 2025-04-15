@@ -18,5 +18,4 @@ require (
 	lukechampine.com/blake3 v1.1.6 // indirect
 )
 
-go 1.23
-toolchain go1.24.1
+go 1.23.0
