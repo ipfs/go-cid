@@ -468,7 +468,7 @@ func Test16BytesVarint(t *testing.T) {
 
 func TestFuzzCid(t *testing.T) {
 	buf := make([]byte, 128)
-	for i := 0; i < 200; i++ {
+	for range 200 {
 		s := rand.Intn(128)
 		crand.Read(buf[:s])
 		_, _ = Cast(buf[:s])
@@ -493,7 +493,7 @@ func TestParse(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	assertions := [][]interface{}{
+	assertions := [][]any{
 		{NewCidV0(h), theHash},
 		{NewCidV0(h).Bytes(), theHash},
 		{h, theHash},
@@ -503,7 +503,7 @@ func TestParse(t *testing.T) {
 		{"http://localhost:8080/ipfs/" + theHash, theHash},
 	}
 
-	assert := func(arg interface{}, expected string) error {
+	assert := func(arg any, expected string) error {
 		cid, err = Parse(arg)
 		if err != nil {
 			return err
@@ -827,7 +827,7 @@ func TestLoggable(t *testing.T) {
 		t.Fatal(err)
 	}
 	actual := c.Loggable()
-	expected := make(map[string]interface{})
+	expected := make(map[string]any)
 	expected["cid"] = c
 	if !reflect.DeepEqual(actual, expected) {
 		t.Fatalf("did not get expected loggable form (got %v)", actual)
