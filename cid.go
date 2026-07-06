@@ -185,7 +185,7 @@ func (c Cid) Defined() bool {
 
 // Parse is a short-hand function to perform Decode, Cast etc... on
 // a generic interface{} type.
-func Parse(v interface{}) (Cid, error) {
+func Parse(v any) (Cid, error) {
 	switch v2 := v.(type) {
 	case string:
 		if strings.Contains(v2, "/ipfs/") {
@@ -204,7 +204,7 @@ func Parse(v interface{}) (Cid, error) {
 }
 
 // MustParse calls Parse but will panic on error.
-func MustParse(v interface{}) Cid {
+func MustParse(v any) Cid {
 	c, err := Parse(v)
 	if err != nil {
 		panic(err)
@@ -495,7 +495,7 @@ func (c Cid) MarshalJSON() ([]byte, error) {
 	if !c.Defined() {
 		return []byte("null"), nil
 	}
-	return []byte(fmt.Sprintf("{\"/\":\"%s\"}", c.String())), nil
+	return fmt.Appendf(nil, "{\"/\":\"%s\"}", c.String()), nil
 }
 
 // KeyString returns the binary representation of the Cid as a string
@@ -505,8 +505,8 @@ func (c Cid) KeyString() string {
 
 // Loggable returns a Loggable (as defined by
 // https://godoc.org/github.com/ipfs/go-log).
-func (c Cid) Loggable() map[string]interface{} {
-	return map[string]interface{}{
+func (c Cid) Loggable() map[string]any {
+	return map[string]any{
 		"cid": c,
 	}
 }
