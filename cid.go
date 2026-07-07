@@ -286,7 +286,7 @@ func Cast(data []byte) (Cid, error) {
 	}
 
 	if nr != len(data) {
-		return Undef, ErrInvalidCid{fmt.Errorf("trailing bytes in data buffer passed to cid Cast")}
+		return Undef, ErrInvalidCid{errors.New("trailing bytes in data buffer passed to cid Cast")}
 	}
 
 	return c, nil
@@ -429,7 +429,7 @@ func (c Cid) WriteBytes(w io.Writer) (int, error) {
 		return n, err
 	}
 	if n != len(c.str) {
-		return n, fmt.Errorf("failed to write entire cid string")
+		return n, errors.New("failed to write entire cid string")
 	}
 	return n, nil
 }
@@ -456,7 +456,7 @@ func (c Cid) Equals(o Cid) bool {
 // UnmarshalJSON parses the JSON representation of a Cid.
 func (c *Cid) UnmarshalJSON(b []byte) error {
 	if len(b) < 2 {
-		return ErrInvalidCid{fmt.Errorf("invalid cid json blob")}
+		return ErrInvalidCid{errors.New("invalid cid json blob")}
 	}
 	obj := struct {
 		CidTarget string `json:"/"`
@@ -472,7 +472,7 @@ func (c *Cid) UnmarshalJSON(b []byte) error {
 	}
 
 	if obj.CidTarget == "" {
-		return ErrInvalidCid{fmt.Errorf("cid was incorrectly formatted")}
+		return ErrInvalidCid{errors.New("cid was incorrectly formatted")}
 	}
 
 	out, err := Decode(obj.CidTarget)
@@ -564,7 +564,7 @@ func (p Prefix) Sum(data []byte) (Cid, error) {
 	if p.Version == 0 && (p.MhType != mh.SHA2_256 ||
 		(p.MhLength != 32 && p.MhLength != -1)) {
 
-		return Undef, ErrInvalidCid{fmt.Errorf("invalid v0 prefix")}
+		return Undef, ErrInvalidCid{errors.New("invalid v0 prefix")}
 	}
 
 	hash, err := mh.Sum(data, p.MhType, length)
@@ -578,7 +578,7 @@ func (p Prefix) Sum(data []byte) (Cid, error) {
 	case 1:
 		return NewCidV1(p.Codec, hash), nil
 	default:
-		return Undef, ErrInvalidCid{fmt.Errorf("invalid cid version")}
+		return Undef, ErrInvalidCid{errors.New("invalid cid version")}
 	}
 }
 
@@ -637,7 +637,7 @@ func PrefixFromBytes(buf []byte) (Prefix, error) {
 func CidFromBytes(data []byte) (int, Cid, error) {
 	if len(data) > 2 && data[0] == mh.SHA2_256 && data[1] == 32 {
 		if len(data) < 34 {
-			return 0, Undef, ErrInvalidCid{fmt.Errorf("not enough bytes for cid v0")}
+			return 0, Undef, ErrInvalidCid{errors.New("not enough bytes for cid v0")}
 		}
 
 		h, err := mh.Cast(data[:34])
